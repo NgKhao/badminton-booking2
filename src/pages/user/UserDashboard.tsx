@@ -20,10 +20,10 @@ import {
   EmojiEvents,
 } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
-import { useAuthStore } from '../store/authStore';
-import { useBookingStore } from '../store/bookingStore';
+import { useAuthStore } from '../../store/authStore';
+import { useBookingStore } from '../../store/bookingStore';
 
-export const Dashboard: React.FC = () => {
+export const UserDashboard: React.FC = () => {
   const { user } = useAuthStore();
   const { weatherData, bookings } = useBookingStore();
 

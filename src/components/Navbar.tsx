@@ -21,6 +21,7 @@ import {
   Chat,
   Home,
   EventNote,
+  SportsTennis,
 } from '@mui/icons-material';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
@@ -49,6 +50,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
 
   const navItems = [
     { label: 'Trang chủ', path: '/dashboard', icon: Home },
+    { label: 'Xem sân', path: '/courts', icon: SportsTennis },
     { label: 'Đặt sân', path: '/booking', icon: EventNote },
     { label: 'Lịch sử', path: '/bookings', icon: History },
   ];

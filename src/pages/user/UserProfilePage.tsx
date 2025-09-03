@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Typography,
   TextField,
@@ -23,7 +23,7 @@ import {
   VerifiedUser,
   Security,
 } from '@mui/icons-material';
-import { useAuthStore } from '../store/authStore';
+import { useAuthStore } from '../../store/authStore';
 
 export const ProfilePage: React.FC = () => {
   const { user, updateUser } = useAuthStore();

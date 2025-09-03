@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -8,9 +9,6 @@ import {
   CardMedia,
   Button,
   Chip,
-  Rating,
-  Grid,
-  TextField,
   MenuItem,
   FormControl,
   InputLabel,
@@ -19,18 +17,20 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
+  Alert,
+  Snackbar,
 } from '@mui/material';
 import {
   FilterList,
-  LocationOn,
   AcUnit,
   WbSunny,
   Schedule,
-  Star,
   Close,
   SportsTennis,
+  Login,
 } from '@mui/icons-material';
-import type { Court } from '../types';
+import type { Court } from '../../types';
+import { useAuthStore } from '../../store/authStore';
 
 // Mock data cho sân cầu lông
 const mockCourts: Court[] = [
@@ -112,14 +112,18 @@ export const CourtsPage: React.FC = () => {
   const [courts] = useState<Court[]>(mockCourts);
   const [filteredCourts, setFilteredCourts] = useState<Court[]>(mockCourts);
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
+  const [showLoginAlert, setShowLoginAlert] = useState(false);
   const [filters, setFilters] = useState({
     courtType: '',
     priceRange: '',
     sortBy: 'price-asc',
   });
 
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
+
   // Filter functions
-  const applyFilters = React.useCallback(() => {
+  const applyFilters = useCallback(() => {
     let filtered = [...courts];
 
     // Filter by court type
@@ -151,9 +155,9 @@ export const CourtsPage: React.FC = () => {
     setFilteredCourts(filtered);
   }, [courts, filters]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     applyFilters();
-  }, [filters]);
+  }, [filters, applyFilters]);
 
   const handleFilterChange = (field: string, value: string) => {
     setFilters((prev) => ({ ...prev, [field]: value }));
@@ -192,11 +196,20 @@ export const CourtsPage: React.FC = () => {
   };
 
   const handleBookCourt = () => {
+    if (!isAuthenticated) {
+      setShowLoginAlert(true);
+      return;
+    }
+
     if (selectedCourt) {
-      // TODO: Navigate to booking page with selected court
-      console.log('Book court:', selectedCourt);
+      // Navigate to booking page with selected court
+      navigate('/booking', { state: { selectedCourt } });
       setSelectedCourt(null);
     }
+  };
+
+  const handleLoginRedirect = () => {
+    navigate('/auth');
   };
 
   return (
@@ -268,83 +281,73 @@ export const CourtsPage: React.FC = () => {
         </Card>
 
         {/* Courts Grid */}
-        <Grid container spacing={3}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCourts.map((court) => (
-            <Grid item xs={12} md={6} lg={4} key={court.court_id}>
-              <Card
-                className={`hover:shadow-xl transition-all duration-300 cursor-pointer ${
-                  court.status !== 'available' ? 'opacity-60' : ''
-                }`}
-                onClick={() => handleSelectCourt(court)}
-              >
-                <CardMedia
-                  component="img"
-                  height="200"
-                  image={court.images?.[0] || '/api/placeholder/400/300'}
-                  alt={court.court_name}
-                />
-                <CardContent>
-                  <Box className="flex justify-between items-start mb-2">
-                    <Typography variant="h6" className="font-semibold">
-                      {court.court_name}
-                    </Typography>
-                    <Chip
-                      icon={
-                        court.court_type === 'Trong nhà' ? (
-                          <AcUnit fontSize="small" />
-                        ) : (
-                          <WbSunny fontSize="small" />
-                        )
-                      }
-                      label={court.court_type}
-                      size="small"
-                      className={
-                        court.court_type === 'Trong nhà'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-amber-100 text-amber-800'
-                      }
-                    />
-                  </Box>
-
-                  <Typography variant="body2" className="text-gray-600 mb-3" noWrap>
-                    {court.description}
+            <Card
+              key={court.court_id}
+              className={`hover:shadow-xl transition-all duration-300 cursor-pointer ${
+                court.status !== 'available' ? 'opacity-60' : ''
+              }`}
+              onClick={() => handleSelectCourt(court)}
+            >
+              <CardMedia
+                component="img"
+                height="200"
+                image={court.images?.[0] || '/api/placeholder/400/300'}
+                alt={court.court_name}
+                className="h-48 object-cover"
+              />
+              <CardContent>
+                <Box className="flex justify-between items-start mb-2">
+                  <Typography variant="h6" className="font-semibold">
+                    {court.court_name}
                   </Typography>
+                  <Chip
+                    icon={
+                      court.court_type === 'Trong nhà' ? (
+                        <AcUnit fontSize="small" />
+                      ) : (
+                        <WbSunny fontSize="small" />
+                      )
+                    }
+                    label={court.court_type}
+                    size="small"
+                    className={
+                      court.court_type === 'Trong nhà'
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-amber-100 text-amber-800'
+                    }
+                  />
+                </Box>
 
-                  <Box className="flex justify-between items-center mb-3">
-                    <Typography variant="h6" className="text-emerald-600 font-bold">
-                      {court.hourly_rate.toLocaleString('vi-VN')}đ/giờ
-                    </Typography>
-                    <Chip
-                      label={getStatusText(court.status)}
-                      size="small"
-                      color={getStatusColor(court.status)}
-                    />
-                  </Box>
+                <Typography variant="body2" className="text-gray-600 mb-3" noWrap>
+                  {court.description}
+                </Typography>
 
-                  <Box className="flex items-center justify-between">
-                    <Box className="flex items-center gap-1">
-                      <LocationOn fontSize="small" className="text-gray-400" />
-                      <Typography variant="body2" className="text-gray-600">
-                        Địa điểm 1
-                      </Typography>
-                    </Box>
-                    <Rating value={4.5} precision={0.1} readOnly size="small" />
-                  </Box>
+                <Box className="flex justify-between items-center mb-3">
+                  <Typography variant="h6" className="text-emerald-600 font-bold">
+                    {court.hourly_rate.toLocaleString('vi-VN')}đ/giờ
+                  </Typography>
+                  <Chip
+                    label={getStatusText(court.status)}
+                    size="small"
+                    color={getStatusColor(court.status)}
+                  />
+                </Box>
 
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    className="mt-3 bg-emerald-500 hover:bg-emerald-600"
-                    startIcon={<SportsTennis />}
-                    disabled={court.status !== 'available'}
-                  >
-                    {court.status === 'available' ? 'Đặt sân' : 'Không khả dụng'}
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  className="bg-emerald-500 hover:bg-emerald-600"
+                  startIcon={<SportsTennis />}
+                  disabled={court.status !== 'available'}
+                >
+                  {court.status === 'available' ? 'Xem chi tiết' : 'Không khả dụng'}
+                </Button>
+              </CardContent>
+            </Card>
           ))}
-        </Grid>
+        </div>
 
         {/* Court Detail Dialog */}
         <Dialog
@@ -387,17 +390,13 @@ export const CourtsPage: React.FC = () => {
                         <Typography>{selectedCourt.court_type}</Typography>
                       </Box>
                       <Box className="flex items-center gap-2">
-                        <LocationOn className="text-gray-500" />
-                        <Typography>Địa điểm 1</Typography>
-                      </Box>
-                      <Box className="flex items-center gap-2">
                         <Schedule className="text-gray-500" />
                         <Typography>Mở cửa 06:00 - 22:00</Typography>
                       </Box>
                       <Box className="flex items-center gap-2">
-                        <Star className="text-amber-500" />
-                        <Rating value={4.5} precision={0.1} readOnly size="small" />
-                        <Typography>(4.5/5)</Typography>
+                        <Typography variant="body2" className="text-gray-600 mb-4">
+                          {selectedCourt.description}
+                        </Typography>
                       </Box>
                     </Box>
                   </Box>
@@ -409,24 +408,66 @@ export const CourtsPage: React.FC = () => {
                     <Typography variant="h4" className="text-emerald-600 font-bold mb-4">
                       {selectedCourt.hourly_rate.toLocaleString('vi-VN')}đ/giờ
                     </Typography>
-                    <Typography variant="body2" className="text-gray-600 mb-4">
-                      {selectedCourt.description}
-                    </Typography>
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      size="large"
-                      className="bg-emerald-500 hover:bg-emerald-600"
-                      onClick={handleBookCourt}
-                    >
-                      Đặt sân ngay
-                    </Button>
+
+                    {!isAuthenticated ? (
+                      <Box className="space-y-3">
+                        <Alert severity="info" className="mb-3">
+                          Bạn cần đăng nhập để đặt sân
+                        </Alert>
+                        <Button
+                          fullWidth
+                          variant="outlined"
+                          size="large"
+                          className="border-emerald-500 text-emerald-600 hover:bg-emerald-50 mb-2"
+                          startIcon={<Login />}
+                          onClick={handleLoginRedirect}
+                        >
+                          Đăng nhập để đặt sân
+                        </Button>
+                      </Box>
+                    ) : (
+                      <Button
+                        fullWidth
+                        variant="contained"
+                        size="large"
+                        className="bg-emerald-500 hover:bg-emerald-600"
+                        onClick={handleBookCourt}
+                      >
+                        Đặt sân ngay
+                      </Button>
+                    )}
                   </Box>
                 </Box>
               </Box>
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Login Alert Snackbar */}
+        <Snackbar
+          open={showLoginAlert}
+          autoHideDuration={6000}
+          onClose={() => setShowLoginAlert(false)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+          <Alert
+            onClose={() => setShowLoginAlert(false)}
+            severity="info"
+            className="w-full"
+            action={
+              <Button
+                color="inherit"
+                size="small"
+                onClick={handleLoginRedirect}
+                className="text-blue-600"
+              >
+                Đăng nhập
+              </Button>
+            }
+          >
+            Bạn cần đăng nhập để đặt sân!
+          </Alert>
+        </Snackbar>
       </Container>
     </Box>
   );

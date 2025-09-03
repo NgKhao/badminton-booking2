@@ -9,12 +9,13 @@ import { theme } from './utils/theme';
 import { Navbar } from './components/Navbar';
 
 // Pages
-import { LandingPage } from './pages/LandingPage';
-import { AuthPage } from './pages/AuthPage';
-import { Dashboard } from './pages/Dashboard';
-import { BookingPage } from './pages/BookingPage';
-import { BookingHistoryPage } from './pages/BookingHistoryPage';
-import { ProfilePage } from './pages/ProfilePage';
+import { HomePage } from './pages/user/HomePage';
+import { AuthPage } from './pages/user/AuthPage';
+import { UserDashboard } from './pages/user/UserDashboard';
+import { BookingPage } from './pages/user/BookingPage';
+import { BookingHistoryPage } from './pages/user/BookingHistoryPage';
+import { ProfilePage } from './pages/user/UserProfilePage';
+import { CourtsPage } from './pages/user/CourtsPage';
 
 // Components
 import { ChatFAB } from './components/AIChat';
@@ -76,7 +77,7 @@ function App() {
                 path="/"
                 element={
                   <PublicRoute>
-                    <LandingPage />
+                    <HomePage />
                   </PublicRoute>
                 }
               />
@@ -89,12 +90,15 @@ function App() {
                 }
               />
 
+              {/* Courts page - accessible to everyone */}
+              <Route path="/courts" element={<CourtsPage />} />
+
               {/* Protected Routes */}
               <Route
                 path="/dashboard"
                 element={
                   <ProtectedRoute>
-                    <Dashboard />
+                    <UserDashboard />
                   </ProtectedRoute>
                 }
               />

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Paper,
   Typography,
@@ -16,7 +16,7 @@ import {
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
 import { SportsTennis, Schedule, EventNote, AccessTime, Payment, Phone } from '@mui/icons-material';
-import type { Booking, Court } from '../types';
+import type { Booking, Court } from '../../types';
 
 // Mock data
 const mockBookings: (Booking & { court: Court })[] = [

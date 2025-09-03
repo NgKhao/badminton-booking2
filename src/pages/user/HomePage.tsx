@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Box,
   Container,
@@ -52,7 +52,7 @@ import {
   Instagram,
 } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
-import { ChatFAB } from '../components/AIChat';
+import { ChatFAB } from '../../components/AIChat';
 
 // Court data based on database schema
 const courtFeatures = [
@@ -149,10 +149,9 @@ const faqs = [
   },
 ];
 
-export const LandingPage: React.FC = () => {
+export const HomePage = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const [openDemo, setOpenDemo] = useState(false);
   const [openContact, setOpenContact] = useState(false);
   const [contactForm, setContactForm] = useState({
     name: '',
@@ -199,20 +198,19 @@ export const LandingPage: React.FC = () => {
                   size="large"
                   component={Link}
                   to="/auth"
-                  className="bg-white text-emerald-600 hover:bg-gray-100 px-8 py-3"
                   startIcon={<PlayArrow />}
                 >
                   Đặt Sân Ngay
                 </Button>
 
                 <Button
-                  variant="outlined"
+                  variant="contained"
                   size="large"
-                  onClick={() => setOpenDemo(true)}
-                  className="border-white text-white hover:border-yellow-400 hover:text-yellow-400 px-8 py-3"
-                  startIcon={<Visibility />}
+                  component={Link}
+                  to="/courts"
+                  startIcon={<SportsTennis />}
                 >
-                  Xem Demo
+                  Xem Tất Cả Sân
                 </Button>
               </Box>
 
@@ -283,10 +281,6 @@ export const LandingPage: React.FC = () => {
         <Box className="text-center mb-12">
           <Typography variant="h3" component="h2" gutterBottom className="font-bold">
             Loại Sân Phù Hợp Mọi Nhu Cầu
-          </Typography>
-          <Typography variant="h6" className="text-gray-600 max-w-2xl mx-auto">
-            Dựa trên database thực tế, chúng tôi cung cấp 2 loại sân chất lượng cao với mức giá hợp
-            lý
           </Typography>
         </Box>
 
@@ -580,6 +574,23 @@ export const LandingPage: React.FC = () => {
             <Button
               variant="outlined"
               size="large"
+              component={Link}
+              to="/courts"
+              sx={{
+                borderColor: 'white',
+                color: 'white',
+                '&:hover': { borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)' },
+                px: 4,
+                py: 1.5,
+              }}
+              startIcon={<Visibility />}
+            >
+              Xem Sân
+            </Button>
+
+            <Button
+              variant="outlined"
+              size="large"
               onClick={() => setOpenContact(true)}
               sx={{
                 borderColor: 'white',
@@ -693,37 +704,6 @@ export const LandingPage: React.FC = () => {
         </Container>
       </Box>
 
-      {/* Demo Dialog */}
-      <Dialog open={openDemo} onClose={() => setOpenDemo(false)} maxWidth="md" fullWidth>
-        <DialogTitle>
-          <Box display="flex" alignItems="center" gap={1}>
-            <PlayArrow color="primary" />
-            Demo Hệ Thống Đặt Sân
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Box textAlign="center" py={4}>
-            <img
-              src="/api/placeholder/600/400"
-              alt="Demo hệ thống"
-              style={{ width: '100%', borderRadius: 8 }}
-            />
-            <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>
-              Xem Cách AI Tư Vấn Sân Theo Thời Tiết
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Video demo sẽ hiển thị cách AI phân tích thời tiết và gợi ý sân phù hợp nhất cho bạn.
-            </Typography>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDemo(false)}>Đóng</Button>
-          <Button variant="contained" component={Link} to="/auth">
-            Đăng Ký Ngay
-          </Button>
-        </DialogActions>
-      </Dialog>
-
       {/* Contact Dialog */}
       <Dialog open={openContact} onClose={() => setOpenContact(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Liên Hệ Tư Vấn</DialogTitle>
@@ -779,4 +759,4 @@ export const LandingPage: React.FC = () => {
   );
 };
 
-export default LandingPage;
+export default HomePage;

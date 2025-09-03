@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Box,
   Paper,
@@ -49,8 +50,8 @@ import {
   addMinutes,
   differenceInMinutes,
 } from 'date-fns';
-import { useAuthStore } from '../store/authStore';
-import type { Court } from '../types';
+import { useAuthStore } from '../../store/authStore';
+import type { Court } from '../../types';
 
 const steps = ['Chọn sân', 'Chọn thời gian', 'Xác nhận', 'Hoàn thành'];
 
@@ -141,8 +142,12 @@ const peakHours = [
 ];
 
 export const BookingPage: React.FC = () => {
-  const [activeStep, setActiveStep] = useState(0);
-  const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
+  const location = useLocation();
+  const { selectedCourt: initialSelectedCourt } =
+    (location.state as { selectedCourt?: Court }) || {};
+
+  const [activeStep, setActiveStep] = useState(initialSelectedCourt ? 1 : 0);
+  const [selectedCourt, setSelectedCourt] = useState<Court | null>(initialSelectedCourt || null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedStartTime, setSelectedStartTime] = useState<Date | null>(null);
   const [selectedEndTime, setSelectedEndTime] = useState<Date | null>(null);

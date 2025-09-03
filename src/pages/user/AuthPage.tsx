@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Box,
   Container,
@@ -24,7 +24,7 @@ import {
   SportsBasketball,
 } from '@mui/icons-material';
 import { useForm } from 'react-hook-form';
-import { useAuthStore } from '../store/authStore';
+import { useAuthStore } from '../../store/authStore';
 
 interface LoginFormData {
   email: string;
