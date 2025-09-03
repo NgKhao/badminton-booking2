@@ -17,6 +17,10 @@ import { BookingHistoryPage } from './pages/user/BookingHistoryPage';
 import { ProfilePage } from './pages/user/UserProfilePage';
 import { CourtsPage } from './pages/user/CourtsPage';
 
+// Admin Pages
+import { AdminLayout } from './pages/admin/AdminLayout';
+import { AdminDashboard } from './pages/admin/AdminDashboard';
+
 // Components
 import { ChatFAB } from './components/AIChat';
 
@@ -32,6 +36,21 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Admin Route Component (only for admin users)
+const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated, user } = useAuthStore();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  if (user?.role !== 'admin') {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <>{children}</>;
+};
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -129,6 +148,19 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
+
+                {/* Admin Routes */}
+                <Route
+                  path="/admin/*"
+                  element={
+                    // <AdminRoute>
+                    <AdminLayout />
+                    // </AdminRoute>
+                  }
+                >
+                  <Route index element={<AdminDashboard />} />
+                  {/* Add more admin routes here later */}
+                </Route>
 
                 {/* Catch all route */}
                 <Route path="*" element={<Navigate to="/" replace />} />

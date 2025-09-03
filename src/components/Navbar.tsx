@@ -22,6 +22,7 @@ import {
   Home,
   EventNote,
   SportsTennis,
+  Settings,
 } from '@mui/icons-material';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
@@ -60,6 +61,18 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
     { label: 'Lịch sử', path: '/bookings', icon: History },
   ];
 
+  const adminNavItems = [
+    { label: 'Admin Panel', path: '/admin', icon: Settings },
+    { label: 'Xem sân', path: '/courts', icon: SportsTennis },
+  ];
+
+  // Choose navigation items based on user role
+  const getNavItems = () => {
+    if (!isAuthenticated) return navItems;
+    if (user?.role === 'admin') return adminNavItems;
+    return authenticatedNavItems;
+  };
+
   return (
     <AppBar position="sticky" sx={{ bgcolor: 'background.paper', boxShadow: 1 }} elevation={0}>
       <Container maxWidth="lg">
@@ -78,7 +91,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
 
           {/* Navigation Menu - Show different items based on authentication */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mx: 4, flex: 1 }}>
-            {(isAuthenticated ? authenticatedNavItems : navItems).map((item) => (
+            {getNavItems().map((item) => (
               <Button
                 key={item.path}
                 component={Link}
