@@ -213,25 +213,25 @@ export const CourtsPage: React.FC = () => {
   };
 
   return (
-    <Box className="min-h-screen bg-gray-50">
-      <Container maxWidth="lg" className="py-8">
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+      <Container maxWidth="lg" sx={{ py: 4 }}>
         {/* Header */}
-        <Box className="mb-8">
-          <Typography variant="h4" className="font-bold text-gray-900 mb-2">
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'text.primary', mb: 1 }}>
             Chọn sân cầu lông
           </Typography>
-          <Typography variant="body1" className="text-gray-600">
+          <Typography variant="body1" color="text.secondary">
             Tìm và đặt sân phù hợp với nhu cầu của bạn
           </Typography>
         </Box>
 
         {/* Filters */}
-        <Card className="mb-8">
+        <Card sx={{ mb: 4 }}>
           <CardContent>
-            <Box className="flex items-center gap-4 flex-wrap">
-              <Box className="flex items-center gap-2">
-                <FilterList className="text-gray-600" />
-                <Typography variant="h6" className="font-semibold">
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <FilterList color="action" />
+                <Typography variant="h6" sx={{ fontWeight: 'semibold' }}>
                   Bộ lọc
                 </Typography>
               </Box>
@@ -281,13 +281,25 @@ export const CourtsPage: React.FC = () => {
         </Card>
 
         {/* Courts Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr', lg: '1fr 1fr 1fr' },
+            gap: 3,
+          }}
+        >
           {filteredCourts.map((court) => (
             <Card
               key={court.court_id}
-              className={`hover:shadow-xl transition-all duration-300 cursor-pointer ${
-                court.status !== 'available' ? 'opacity-60' : ''
-              }`}
+              sx={{
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: 6,
+                },
+                transition: 'all 0.3s ease',
+                cursor: 'pointer',
+                opacity: court.status !== 'available' ? 0.6 : 1,
+              }}
               onClick={() => handleSelectCourt(court)}
             >
               <CardMedia
@@ -295,11 +307,18 @@ export const CourtsPage: React.FC = () => {
                 height="200"
                 image={court.images?.[0] || '/api/placeholder/400/300'}
                 alt={court.court_name}
-                className="h-48 object-cover"
+                sx={{ height: 192, objectFit: 'cover' }}
               />
               <CardContent>
-                <Box className="flex justify-between items-start mb-2">
-                  <Typography variant="h6" className="font-semibold">
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    mb: 1,
+                  }}
+                >
+                  <Typography variant="h6" sx={{ fontWeight: 'semibold' }}>
                     {court.court_name}
                   </Typography>
                   <Chip
@@ -312,20 +331,24 @@ export const CourtsPage: React.FC = () => {
                     }
                     label={court.court_type}
                     size="small"
-                    className={
-                      court.court_type === 'Trong nhà'
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-amber-100 text-amber-800'
-                    }
+                    color={court.court_type === 'Trong nhà' ? 'primary' : 'secondary'}
+                    variant="outlined"
                   />
                 </Box>
 
-                <Typography variant="body2" className="text-gray-600 mb-3" noWrap>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }} noWrap>
                   {court.description}
                 </Typography>
 
-                <Box className="flex justify-between items-center mb-3">
-                  <Typography variant="h6" className="text-emerald-600 font-bold">
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    mb: 2,
+                  }}
+                >
+                  <Typography variant="h6" color="primary.main" sx={{ fontWeight: 'bold' }}>
                     {court.hourly_rate.toLocaleString('vi-VN')}đ/giờ
                   </Typography>
                   <Chip
@@ -338,7 +361,7 @@ export const CourtsPage: React.FC = () => {
                 <Button
                   fullWidth
                   variant="contained"
-                  className="bg-emerald-500 hover:bg-emerald-600"
+                  color="primary"
                   startIcon={<SportsTennis />}
                   disabled={court.status !== 'available'}
                 >
@@ -347,7 +370,7 @@ export const CourtsPage: React.FC = () => {
               </CardContent>
             </Card>
           ))}
-        </div>
+        </Box>
 
         {/* Court Detail Dialog */}
         <Dialog
@@ -357,8 +380,8 @@ export const CourtsPage: React.FC = () => {
           fullWidth
         >
           <DialogTitle>
-            <Box className="flex justify-between items-center">
-              <Typography variant="h5" className="font-bold">
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
                 {selectedCourt?.court_name}
               </Typography>
               <IconButton onClick={() => setSelectedCourt(null)}>
@@ -372,10 +395,22 @@ export const CourtsPage: React.FC = () => {
                 <img
                   src={selectedCourt.images?.[0] || '/api/placeholder/600/400'}
                   alt={selectedCourt.court_name}
-                  className="w-full h-64 object-cover rounded-lg mb-4"
+                  style={{
+                    width: '100%',
+                    height: 256,
+                    objectFit: 'cover',
+                    borderRadius: 8,
+                    marginBottom: 16,
+                  }}
                 />
 
-                <Box className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+                    gap: 3,
+                  }}
+                >
                   <Box>
                     <Typography variant="h6" className="font-semibold mb-2">
                       Thông tin sân

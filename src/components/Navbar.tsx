@@ -49,61 +49,76 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
   };
 
   const navItems = [
-    { label: 'Trang chủ', path: '/dashboard', icon: Home },
+    { label: 'Trang chủ', path: '/', icon: Home },
+    { label: 'Xem sân', path: '/courts', icon: SportsTennis },
+  ];
+
+  const authenticatedNavItems = [
+    { label: 'Dashboard', path: '/dashboard', icon: Home },
     { label: 'Xem sân', path: '/courts', icon: SportsTennis },
     { label: 'Đặt sân', path: '/booking', icon: EventNote },
     { label: 'Lịch sử', path: '/bookings', icon: History },
   ];
 
   return (
-    <AppBar position="sticky" className="bg-white shadow-sm" elevation={0}>
+    <AppBar position="sticky" sx={{ bgcolor: 'background.paper', boxShadow: 1 }} elevation={0}>
       <Container maxWidth="lg">
-        <Toolbar className="px-0">
+        <Toolbar sx={{ px: 0 }}>
           {/* Logo */}
-          <Box className="flex items-center">
-            <BadmintonIcon className="text-emerald-500 mr-2" fontSize="large" />
-            <Typography variant="h5" component="div" className="font-bold text-gray-900">
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <BadmintonIcon sx={{ color: 'primary.main', mr: 1 }} fontSize="large" />
+            <Typography
+              variant="h5"
+              component="div"
+              sx={{ fontWeight: 'bold', color: 'text.primary' }}
+            >
               BadmintonHub
             </Typography>
           </Box>
 
-          {/* Navigation Menu - Only show when authenticated */}
-          {isAuthenticated && (
-            <Box className="flex items-center space-x-1 mx-8 flex-1">
-              {navItems.map((item) => (
-                <Button
-                  key={item.path}
-                  component={Link}
-                  to={item.path}
-                  startIcon={<item.icon />}
-                  className={`text-gray-600 hover:text-emerald-500 ${
-                    location.pathname === item.path ? 'text-emerald-500 bg-emerald-50' : ''
-                  }`}
-                >
-                  {item.label}
-                </Button>
-              ))}
-            </Box>
-          )}
+          {/* Navigation Menu - Show different items based on authentication */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mx: 4, flex: 1 }}>
+            {(isAuthenticated ? authenticatedNavItems : navItems).map((item) => (
+              <Button
+                key={item.path}
+                component={Link}
+                to={item.path}
+                startIcon={<item.icon />}
+                sx={{
+                  color: 'text.secondary',
+                  '&:hover': { color: 'primary.main' },
+                  ...(location.pathname === item.path && {
+                    color: 'primary.main',
+                    bgcolor: 'primary.50',
+                  }),
+                }}
+              >
+                {item.label}
+              </Button>
+            ))}
+          </Box>
 
           {/* Navigation Actions */}
           {isAuthenticated ? (
-            <Box className="flex items-center space-x-2">
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               {/* AI Chat Button */}
-              <IconButton onClick={onOpenChat} className="text-gray-600 hover:text-emerald-500">
+              <IconButton
+                onClick={onOpenChat}
+                sx={{ color: 'text.secondary', '&:hover': { color: 'primary.main' } }}
+              >
                 <Chat />
               </IconButton>
 
               {/* Notifications */}
-              <IconButton className="text-gray-600 hover:text-emerald-500">
+              <IconButton sx={{ color: 'text.secondary', '&:hover': { color: 'primary.main' } }}>
                 <Badge badgeContent={2} color="error">
                   <NotificationsIcon />
                 </Badge>
               </IconButton>
 
               {/* User Menu */}
-              <IconButton onClick={handleMenu} className="ml-2">
-                <Avatar className="bg-emerald-500 w-8 h-8">
+              <IconButton onClick={handleMenu} sx={{ ml: 1 }}>
+                <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
                   {user?.full_name?.[0] || user?.email[0].toUpperCase()}
                 </Avatar>
               </IconButton>
@@ -112,43 +127,41 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
                 anchorEl={anchorEl}
                 open={Boolean(anchorEl)}
                 onClose={handleClose}
-                className="mt-2"
+                sx={{ mt: 1 }}
               >
                 <MenuItem
                   onClick={handleClose}
-                  className="flex items-center"
+                  sx={{ display: 'flex', alignItems: 'center' }}
                   component={Link}
                   to="/profile"
                 >
-                  <Person className="mr-2" fontSize="small" />
+                  <Person sx={{ mr: 1 }} fontSize="small" />
                   Thông tin cá nhân
                 </MenuItem>
                 <MenuItem
                   onClick={handleClose}
-                  className="flex items-center"
+                  sx={{ display: 'flex', alignItems: 'center' }}
                   component={Link}
                   to="/bookings"
                 >
-                  <History className="mr-2" fontSize="small" />
+                  <History sx={{ mr: 1 }} fontSize="small" />
                   Lịch sử đặt sân
                 </MenuItem>
-                <MenuItem onClick={handleLogout} className="flex items-center text-red-600">
-                  <ExitToApp className="mr-2" fontSize="small" />
+                <MenuItem
+                  onClick={handleLogout}
+                  sx={{ display: 'flex', alignItems: 'center', color: 'error.main' }}
+                >
+                  <ExitToApp sx={{ mr: 1 }} fontSize="small" />
                   Đăng xuất
                 </MenuItem>
               </Menu>
             </Box>
           ) : (
-            <Box className="flex items-center space-x-2">
-              <Button color="inherit" className="text-gray-600" component={Link} to="/auth">
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Button color="inherit" component={Link} to="/auth" sx={{ color: 'text.secondary' }}>
                 Đăng nhập
               </Button>
-              <Button
-                variant="contained"
-                className="bg-emerald-500 hover:bg-emerald-600"
-                component={Link}
-                to="/auth"
-              >
+              <Button variant="contained" color="primary" component={Link} to="/auth">
                 Đăng ký
               </Button>
             </Box>

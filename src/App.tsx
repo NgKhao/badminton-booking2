@@ -67,71 +67,73 @@ function App() {
         <CssBaseline />
         <Router>
           <Box className="min-h-screen bg-gray-50">
-            {/* Navigation - only show on authenticated routes */}
-            {isAuthenticated && <Navbar onOpenChat={handleOpenChat} />}
+            {/* Navigation - always show but with different items based on authentication */}
+            <Navbar onOpenChat={handleOpenChat} />
 
             {/* Main Content */}
-            <Routes>
-              {/* Public Routes */}
-              <Route
-                path="/"
-                element={
-                  <PublicRoute>
-                    <HomePage />
-                  </PublicRoute>
-                }
-              />
-              <Route
-                path="/auth"
-                element={
-                  <PublicRoute>
-                    <AuthPage />
-                  </PublicRoute>
-                }
-              />
+            <Box component="main">
+              <Routes>
+                {/* Public Routes */}
+                <Route
+                  path="/"
+                  element={
+                    <PublicRoute>
+                      <HomePage />
+                    </PublicRoute>
+                  }
+                />
+                <Route
+                  path="/auth"
+                  element={
+                    <PublicRoute>
+                      <AuthPage />
+                    </PublicRoute>
+                  }
+                />
 
-              {/* Courts page - accessible to everyone */}
-              <Route path="/courts" element={<CourtsPage />} />
+                {/* Courts page - accessible to everyone */}
+                <Route path="/courts" element={<CourtsPage />} />
 
-              {/* Protected Routes */}
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <UserDashboard />
-                  </ProtectedRoute>
-                }
-              />
+                {/* Protected Routes */}
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <UserDashboard />
+                    </ProtectedRoute>
+                  }
+                />
 
-              {/* TODO: Add more protected routes */}
-              <Route
-                path="/booking"
-                element={
-                  <ProtectedRoute>
-                    <BookingPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/bookings"
-                element={
-                  <ProtectedRoute>
-                    <BookingHistoryPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <ProfilePage />
-                  </ProtectedRoute>
-                }
-              />
+                {/* TODO: Add more protected routes */}
+                <Route
+                  path="/booking"
+                  element={
+                    <ProtectedRoute>
+                      <BookingPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/bookings"
+                  element={
+                    <ProtectedRoute>
+                      <BookingHistoryPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <ProfilePage />
+                    </ProtectedRoute>
+                  }
+                />
 
-              {/* Catch all route */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+                {/* Catch all route */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Box>
 
             {/* AI Chat Component */}
             {isAuthenticated && <ChatFAB />}

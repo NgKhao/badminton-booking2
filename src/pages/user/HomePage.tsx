@@ -170,7 +170,16 @@ export const HomePage = () => {
   return (
     <Box>
       {/* Hero Section */}
-      <Box className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white py-12 md:py-20 relative overflow-hidden">
+      <Box
+        sx={{
+          background: (theme) =>
+            `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+          color: 'white',
+          py: { xs: 6, md: 10 },
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
         <Container maxWidth="lg">
           <Box className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             <Box>
@@ -182,17 +191,17 @@ export const HomePage = () => {
               >
                 Đặt Sân Cầu Lông
                 <br />
-                <Box component="span" className="text-yellow-400">
+                <Box component="span" sx={{ color: 'secondary.main' }}>
                   Thông Minh & Nhanh Chóng
                 </Box>
               </Typography>
 
-              <Typography variant="h6" className="mb-8 opacity-90">
+              <Typography variant="h6" sx={{ mb: 4, opacity: 0.9 }}>
                 Hệ thống đặt sân với AI tư vấn theo thời tiết, tránh trùng lịch tự động. Trải nghiệm
                 đặt sân hiện đại nhất Việt Nam!
               </Typography>
 
-              <Box className="flex gap-4 flex-wrap">
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                 <Button
                   variant="contained"
                   size="large"
@@ -215,55 +224,88 @@ export const HomePage = () => {
               </Box>
 
               {/* Stats */}
-              <Box className="grid grid-cols-3 gap-6 mt-8">
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: 3,
+                  mt: 4,
+                }}
+              >
                 <Box>
-                  <Typography variant="h4" className="font-bold">
+                  <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
                     2+
                   </Typography>
-                  <Typography variant="body2" className="opacity-80">
+                  <Typography variant="body2" sx={{ opacity: 0.8 }}>
                     Loại Sân
                   </Typography>
                 </Box>
                 <Box>
-                  <Typography variant="h4" className="font-bold">
+                  <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
                     24/7
                   </Typography>
-                  <Typography variant="body2" className="opacity-80">
+                  <Typography variant="body2" sx={{ opacity: 0.8 }}>
                     Hỗ Trợ AI
                   </Typography>
                 </Box>
                 <Box>
-                  <Typography variant="h4" className="font-bold">
+                  <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
                     100%
                   </Typography>
-                  <Typography variant="body2" className="opacity-80">
+                  <Typography variant="body2" sx={{ opacity: 0.8 }}>
                     Tự Động
                   </Typography>
                 </Box>
               </Box>
             </Box>
 
-            <Box className="relative text-center">
+            <Box sx={{ position: 'relative', textAlign: 'center' }}>
               <img
                 src="/api/placeholder/500/400"
                 alt="Sân cầu lông hiện đại"
-                className="w-full rounded-lg shadow-2xl"
+                style={{
+                  width: '100%',
+                  borderRadius: 8,
+                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                }}
               />
 
               {/* Floating Cards */}
-              <Paper className="absolute top-5 -right-5 p-4 bg-white text-gray-800 rounded-lg shadow-lg">
-                <Box className="flex items-center gap-2">
-                  <SmartToy className="text-emerald-500" />
-                  <Typography variant="body2" className="font-bold">
+              <Paper
+                sx={{
+                  position: 'absolute',
+                  top: 2,
+                  right: -2,
+                  p: 2,
+                  bgcolor: 'background.paper',
+                  color: 'text.primary',
+                  borderRadius: 1,
+                  boxShadow: 3,
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <SmartToy color="primary" />
+                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
                     AI Tư Vấn Thông Minh
                   </Typography>
                 </Box>
               </Paper>
 
-              <Paper className="absolute bottom-5 -left-5 p-4 bg-white text-gray-800 rounded-lg shadow-lg">
-                <Box className="flex items-center gap-2">
-                  <WbSunny className="text-orange-500" />
-                  <Typography variant="body2" className="font-bold">
+              <Paper
+                sx={{
+                  position: 'absolute',
+                  bottom: 2,
+                  left: -2,
+                  p: 2,
+                  bgcolor: 'background.paper',
+                  color: 'text.primary',
+                  borderRadius: 1,
+                  boxShadow: 3,
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <WbSunny color="secondary" />
+                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
                     Dự Báo Thời Tiết
                   </Typography>
                 </Box>
@@ -273,13 +315,23 @@ export const HomePage = () => {
         </Container>
 
         {/* Background Pattern */}
-        <Box className="absolute top-0 right-0 w-1/2 h-full opacity-10 bg-white bg-opacity-10" />
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            width: '50%',
+            height: '100%',
+            opacity: 0.1,
+            bgcolor: 'common.white',
+          }}
+        />
       </Box>
 
       {/* Court Types Section */}
-      <Container maxWidth="lg" className="py-16">
-        <Box className="text-center mb-12">
-          <Typography variant="h3" component="h2" gutterBottom className="font-bold">
+      <Container maxWidth="lg" sx={{ py: 8 }}>
+        <Box sx={{ textAlign: 'center', mb: 6 }}>
+          <Typography variant="h3" component="h2" gutterBottom sx={{ fontWeight: 'bold' }}>
             Loại Sân Phù Hợp Mọi Nhu Cầu
           </Typography>
         </Box>
@@ -359,7 +411,7 @@ export const HomePage = () => {
       </Container>
 
       {/* Features Section */}
-      <Box sx={{ bgcolor: '#f8fafc', py: 8 }}>
+      <Box sx={{ bgcolor: 'background.default', py: 8 }}>
         <Container maxWidth="lg">
           <Box textAlign="center" mb={6}>
             <Typography variant="h3" component="h2" gutterBottom fontWeight="bold">
@@ -509,7 +561,7 @@ export const HomePage = () => {
       </Container>
 
       {/* FAQ Section */}
-      <Box sx={{ bgcolor: '#f8fafc', py: 8 }}>
+      <Box sx={{ bgcolor: 'background.default', py: 8 }}>
         <Container maxWidth="md">
           <Box textAlign="center" mb={6}>
             <Typography variant="h3" component="h2" gutterBottom fontWeight="bold">
@@ -521,7 +573,7 @@ export const HomePage = () => {
           </Box>
 
           {faqs.map((faq, index) => (
-            <Accordion key={index} elevation={0} sx={{ mb: 1, bgcolor: 'white' }}>
+            <Accordion key={index} elevation={0} sx={{ mb: 1, bgcolor: 'background.paper' }}>
               <AccordionSummary expandIcon={<ExpandMore />}>
                 <Typography variant="h6" fontWeight="medium">
                   {faq.question}
@@ -540,7 +592,8 @@ export const HomePage = () => {
       {/* CTA Section */}
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)',
+          background: (theme) =>
+            `linear-gradient(135deg, ${theme.palette.info.main} 0%, ${theme.palette.primary.main} 100%)`,
           color: 'white',
           py: 8,
         }}
@@ -560,9 +613,9 @@ export const HomePage = () => {
               component={Link}
               to="/auth"
               sx={{
-                bgcolor: 'white',
+                bgcolor: 'background.paper',
                 color: 'primary.main',
-                '&:hover': { bgcolor: '#f3f4f6' },
+                '&:hover': { bgcolor: 'grey.50' },
                 px: 4,
                 py: 1.5,
               }}
@@ -579,7 +632,10 @@ export const HomePage = () => {
               sx={{
                 borderColor: 'white',
                 color: 'white',
-                '&:hover': { borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)' },
+                '&:hover': {
+                  borderColor: 'primary.light',
+                  backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                },
                 px: 4,
                 py: 1.5,
               }}
@@ -595,7 +651,10 @@ export const HomePage = () => {
               sx={{
                 borderColor: 'white',
                 color: 'white',
-                '&:hover': { borderColor: '#fbbf24', color: '#fbbf24' },
+                '&:hover': {
+                  borderColor: 'secondary.main',
+                  color: 'secondary.main',
+                },
                 px: 4,
                 py: 1.5,
               }}
@@ -608,7 +667,7 @@ export const HomePage = () => {
       </Box>
 
       {/* Footer */}
-      <Box sx={{ bgcolor: '#1f2937', color: 'white', py: 6 }}>
+      <Box sx={{ bgcolor: 'grey.900', color: 'white', py: 6 }}>
         <Container maxWidth="lg">
           <Box
             sx={{
@@ -694,7 +753,7 @@ export const HomePage = () => {
             </Box>
           </Box>
 
-          <Divider sx={{ my: 4, borderColor: '#374151' }} />
+          <Divider sx={{ my: 4, borderColor: 'grey.700' }} />
 
           <Box textAlign="center">
             <Typography variant="body2" sx={{ opacity: 0.6 }}>
