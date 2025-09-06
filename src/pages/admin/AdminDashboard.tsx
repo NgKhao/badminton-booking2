@@ -295,6 +295,8 @@ export const AdminDashboard: React.FC = () => {
                   borderBottom: index < recentBookings.length - 1 ? '1px solid' : 'none',
                   borderColor: 'divider',
                   py: 2,
+                  display: 'flex',
+                  alignItems: 'center',
                 }}
               >
                 <ListItemAvatar>
@@ -303,30 +305,25 @@ export const AdminDashboard: React.FC = () => {
                   </Avatar>
                 </ListItemAvatar>
                 <ListItemText
-                  primary={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                      <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-                        {booking.customerName}
-                      </Typography>
-                      <Chip
-                        label={getStatusText(booking.status)}
-                        size="small"
-                        color={getStatusColor(booking.status)}
-                        variant="outlined"
-                      />
-                    </Box>
-                  }
-                  secondary={
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        {booking.court} • {booking.time}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {booking.date} • {booking.amount} VNĐ
-                      </Typography>
-                    </Box>
-                  }
+                  primary={booking.customerName}
+                  secondary={`${booking.court} • ${booking.time} • ${booking.date} • ${booking.amount} VNĐ`}
+                  primaryTypographyProps={{
+                    variant: 'body1',
+                    sx: { fontWeight: 'medium' },
+                  }}
+                  secondaryTypographyProps={{
+                    variant: 'body2',
+                    color: 'text.secondary',
+                  }}
                 />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mr: 2 }}>
+                  <Chip
+                    label={getStatusText(booking.status)}
+                    size="small"
+                    color={getStatusColor(booking.status)}
+                    variant="outlined"
+                  />
+                </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                   {booking.status === 'confirmed' && (
                     <CheckCircle sx={{ color: 'success.main', fontSize: 20 }} />

@@ -397,7 +397,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           bgcolor: 'background.default',
         }}
       >
-        <Toolbar />
         <Container maxWidth="xl" sx={{ py: 3 }}>
           {children || <Outlet />}
         </Container>

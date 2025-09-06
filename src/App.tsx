@@ -20,6 +20,8 @@ import { CourtsPage } from './pages/user/CourtsPage';
 // Admin Pages
 import { AdminLayout } from './pages/admin/AdminLayout';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { AdminCourtsPage } from './pages/admin/AdminCourtsPage';
+import { AdminCustomersPage } from './pages/admin/AdminCustomersPage';
 
 // Components
 import { ChatFAB } from './components/AIChat';
@@ -159,6 +161,8 @@ function App() {
                   }
                 >
                   <Route index element={<AdminDashboard />} />
+                  <Route path="courts" element={<AdminCourtsPage />} />
+                  <Route path="customers" element={<AdminCustomersPage />} />
                   {/* Add more admin routes here later */}
                 </Route>
 
