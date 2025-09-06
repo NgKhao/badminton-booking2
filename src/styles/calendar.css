@@ -1,0 +1,260 @@
+/* Override React Big Calendar styles */
+.rbc-calendar {
+  font-family: 'Roboto', sans-serif;
+}
+
+.rbc-header {
+  background-color: #f5f5f5;
+  color: #1976d2;
+  font-weight: 600;
+  text-align: center;
+  padding: 8px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.rbc-time-view {
+  border: 1px solid #e0e0e0;
+}
+
+.rbc-time-slot {
+  border-top: 1px solid #f0f0f0;
+}
+
+.rbc-time-content {
+  border: none;
+}
+
+.rbc-day-slot .rbc-time-slot {
+  border-top: 1px solid #f0f0f0;
+}
+
+.rbc-timeslot-group {
+  min-height: 40px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.rbc-time-header-content {
+  border-left: 1px solid #e0e0e0;
+}
+
+.rbc-time-header-cell {
+  min-height: 40px;
+}
+
+.rbc-event {
+  border-radius: 4px;
+  border: none;
+  padding: 2px 5px;
+  font-size: 0.85rem;
+  color: white;
+}
+
+.rbc-event-label {
+  font-size: 0.75rem;
+}
+
+.rbc-event-continues-after,
+.rbc-event-continues-before {
+  border-radius: 4px;
+}
+
+.rbc-event-allday {
+  color: white;
+}
+
+.rbc-show-more {
+  background-color: transparent;
+  color: #1976d2;
+  font-weight: 500;
+}
+
+.rbc-toolbar {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.rbc-toolbar-label {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1976d2;
+}
+
+.rbc-btn-group {
+  display: flex;
+  gap: 5px;
+}
+
+.rbc-btn-group button {
+  background-color: white;
+  border: 1px solid #e0e0e0;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Roboto', sans-serif;
+}
+
+.rbc-btn-group button:hover {
+  background-color: #f5f5f5;
+  border-color: #1976d2;
+}
+
+.rbc-btn-group button.rbc-active {
+  background-color: #1976d2;
+  color: white;
+  border-color: #1976d2;
+}
+
+.rbc-today {
+  background-color: #e3f2fd;
+}
+
+.rbc-off-range-bg {
+  background-color: #fafafa;
+}
+
+.rbc-current-time-indicator {
+  background-color: #f44336;
+  height: 2px;
+  z-index: 3;
+}
+
+/* Month view specific styles */
+.rbc-month-view {
+  border: 1px solid #e0e0e0;
+}
+
+.rbc-date-cell {
+  text-align: right;
+  padding: 5px;
+}
+
+.rbc-date-cell > a {
+  color: #666;
+  text-decoration: none;
+}
+
+.rbc-date-cell.rbc-off-range {
+  color: #ccc;
+}
+
+.rbc-date-cell.rbc-now {
+  font-weight: bold;
+  color: #1976d2;
+}
+
+.rbc-month-row {
+  border-bottom: 1px solid #e0e0e0;
+  min-height: 50px;
+}
+
+.rbc-day-bg {
+  border-right: 1px solid #e0e0e0;
+}
+
+.rbc-day-bg.rbc-today {
+  background-color: #e3f2fd;
+}
+
+/* Week and Day view specific styles */
+.rbc-time-view .rbc-time-header {
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.rbc-time-view .rbc-time-content > * + * > * {
+  border-left: 1px solid #e0e0e0;
+}
+
+.rbc-day-slot .rbc-event {
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.rbc-slot-selection {
+  z-index: 10;
+  position: absolute;
+  background-color: rgba(25, 118, 210, 0.5);
+  border: 1px solid #1976d2;
+}
+
+/* Custom status colors */
+.rbc-event-confirmed {
+  background-color: #4caf50 !important;
+}
+
+.rbc-event-pending {
+  background-color: #ff9800 !important;
+}
+
+.rbc-event-cancelled {
+  background-color: #f44336 !important;
+}
+
+.rbc-event-conflict {
+  background-color: #d32f2f !important;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(211, 47, 47, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(211, 47, 47, 0);
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .rbc-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rbc-toolbar-label {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+
+  .rbc-btn-group {
+    justify-content: center;
+  }
+
+  .rbc-btn-group button {
+    padding: 6px 12px;
+    font-size: 0.875rem;
+  }
+}
+
+/* Selection and interaction */
+.rbc-addons-dnd .rbc-event {
+  cursor: move;
+}
+
+.rbc-addons-dnd .rbc-event:hover {
+  transform: scale(1.02);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Popup and overlay styles */
+.rbc-overlay {
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.25);
+  border: 1px solid #e0e0e0;
+  background-color: white;
+  border-radius: 4px;
+  padding: 10px;
+}
+
+.rbc-overlay-header {
+  border-bottom: 1px solid #e0e0e0;
+  margin: -10px -10px 10px -10px;
+  padding: 10px;
+  background-color: #f5f5f5;
+  font-weight: 600;
+}
