@@ -1,13 +1,9 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { Calendar, momentLocalizer, Views } from 'react-big-calendar';
-import type { View } from 'react-big-calendar';
-import moment from 'moment';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
-import '../../styles/calendar.css';
+import React, { useState, useCallback } from 'react';
+import type { SlotInfo, View } from 'react-big-calendar';
+import { Views } from 'react-big-calendar';
 import {
   Box,
   Typography,
-  Paper,
   Button,
   Dialog,
   DialogTitle,
@@ -19,7 +15,6 @@ import {
   Select,
   MenuItem,
   Alert,
-  Chip,
   Card,
   CardContent,
   Switch,
@@ -28,28 +23,26 @@ import {
   Radio,
   RadioGroup,
   Divider,
+  Chip,
   InputAdornment,
 } from '@mui/material';
 import {
   Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
+  Search as SearchIcon,
+  Person as PersonIcon,
+  PersonAdd as PersonAddIcon,
   Warning as WarningIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
   Refresh as RefreshIcon,
-  Search as SearchIcon,
-  Person as PersonIcon,
-  PersonAdd as PersonAddIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
   Payment as PaymentIcon,
-  Money as MoneyIcon,
-  AccountBalance as BankIcon,
 } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
-import { format, parseISO } from 'date-fns';
-
-// Set up the localizer for React Big Calendar
-const localizer = momentLocalizer(moment);
+import { format } from 'date-fns';
+import { PaymentDialog } from '../../components/PaymentDialog';
+import { BookingCalendar } from '../../components/BookingCalendar';
 
 // Mock data for courts
 const mockCourts = [
@@ -64,9 +57,11 @@ const mockCustomers = [
   { customer_id: 1, user_id: 1, full_name: 'Nguyễn Văn A', phone: '0123456789' },
   { customer_id: 2, user_id: 2, full_name: 'Trần Thị B', phone: '0987654321' },
   { customer_id: 3, user_id: 3, full_name: 'Lê Văn C', phone: '0123456788' },
+  { customer_id: 4, user_id: 4, full_name: 'Phạm Thị D', phone: '0123456777' },
+  { customer_id: 5, user_id: 5, full_name: 'Hoàng Văn E', phone: '0123456666' },
 ];
 
-// Payment status interface
+// Interfaces
 interface Transaction {
   transaction_id: number;
   amount: number;
@@ -78,7 +73,6 @@ interface Transaction {
   updated_at: string;
 }
 
-// Booking interface
 interface Booking {
   booking_id: number;
   booking_code: string;
@@ -95,7 +89,6 @@ interface Booking {
   transaction?: Transaction;
 }
 
-// Calendar event interface
 interface CalendarEvent {
   id: number;
   title: string;
@@ -104,7 +97,6 @@ interface CalendarEvent {
   resource: Booking;
 }
 
-// Form data interface
 interface BookingFormData {
   customer_id: number;
   court_id: number;
@@ -112,227 +104,137 @@ interface BookingFormData {
   start_time: string;
   end_time: string;
   status: 'pending' | 'confirmed' | 'cancelled';
-  // For new customer creation
-  customer_name: string;
-  customer_phone: string;
-  customer_email: string;
-  is_new_customer: boolean;
+  customer_name?: string;
+  customer_phone?: string;
+  customer_email?: string;
+  is_new_customer?: boolean;
 }
 
-// Payment form data interface
 interface PaymentFormData {
   amount: number;
   payment_method: 'cash' | 'transfer';
   transaction_date: string;
 }
 
-// Mock booking data
-const mockBookings: Booking[] = [
-  {
-    booking_id: 1,
-    booking_code: 'BK001',
-    customer_id: 1,
-    court_id: 1,
-    booking_date: '2025-09-07',
-    start_time: '08:00',
-    end_time: '10:00',
-    status: 'confirmed',
-    total_amount: 300000,
-    customer_name: 'Nguyễn Văn A',
-    court_name: 'Sân 1',
-    payment_status: 'paid',
-    transaction: {
-      transaction_id: 1,
-      amount: 300000,
-      transaction_date: '2025-09-07',
-      payment_method: 'cash',
-      booking_id: 1,
-      created_by: 1,
-      created_at: '2025-09-07T08:00:00Z',
-      updated_at: '2025-09-07T08:00:00Z',
-    },
-  },
-  {
-    booking_id: 2,
-    booking_code: 'BK002',
-    customer_id: 2,
-    court_id: 2,
-    booking_date: '2025-09-07',
-    start_time: '14:00',
-    end_time: '16:00',
-    status: 'pending',
-    total_amount: 300000,
-    customer_name: 'Trần Thị B',
-    court_name: 'Sân 2',
-    payment_status: 'unpaid',
-  },
-  {
-    booking_id: 3,
-    booking_code: 'BK003',
-    customer_id: 1,
-    court_id: 1,
-    booking_date: '2025-09-08',
-    start_time: '09:00',
-    end_time: '11:00',
-    status: 'confirmed',
-    total_amount: 300000,
-    customer_name: 'Nguyễn Văn A',
-    court_name: 'Sân 1',
-    payment_status: 'unpaid',
-  },
-];
-
 export const AdminBookingsPage: React.FC = () => {
-  const [bookings, setBookings] = useState<Booking[]>(mockBookings);
-  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [bookings, setBookings] = useState<Booking[]>([
+    {
+      booking_id: 1,
+      booking_code: 'BK001',
+      customer_id: 1,
+      court_id: 1,
+      booking_date: '2024-12-15',
+      start_time: '08:00',
+      end_time: '10:00',
+      status: 'confirmed',
+      total_amount: 300000,
+      customer_name: 'Nguyễn Văn A',
+      court_name: 'Sân 1',
+      payment_status: 'paid',
+      transaction: {
+        transaction_id: 1,
+        amount: 300000,
+        transaction_date: '2024-12-15',
+        payment_method: 'cash',
+        booking_id: 1,
+        created_by: 1,
+        created_at: '2024-12-15T08:00:00Z',
+        updated_at: '2024-12-15T08:00:00Z',
+      },
+    },
+    {
+      booking_id: 2,
+      booking_code: 'BK002',
+      customer_id: 2,
+      court_id: 2,
+      booking_date: '2024-12-15',
+      start_time: '14:00',
+      end_time: '16:00',
+      status: 'confirmed',
+      total_amount: 300000,
+      customer_name: 'Trần Thị B',
+      court_name: 'Sân 2',
+      payment_status: 'unpaid',
+    },
+    {
+      booking_id: 3,
+      booking_code: 'BK003',
+      customer_id: 3,
+      court_id: 1,
+      booking_date: '2024-12-16',
+      start_time: '09:00',
+      end_time: '11:00',
+      status: 'pending',
+      total_amount: 300000,
+      customer_name: 'Lê Văn C',
+      court_name: 'Sân 1',
+      payment_status: 'unpaid',
+    },
+  ]);
+
+  // Form states
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [selectedBookingForPayment, setSelectedBookingForPayment] = useState<Booking | null>(null);
   const [isAddMode, setIsAddMode] = useState(false);
+
+  // Search and filter states
+  const [customerSearchQuery, setCustomerSearchQuery] = useState('');
+  const [customerMode, setCustomerMode] = useState<'existing' | 'new'>('existing');
+  const [selectedCourt, setSelectedCourt] = useState<number | 'all'>('all');
+  const [showConflicts, setShowConflicts] = useState(true);
+
+  // Calendar states
   const [currentView, setCurrentView] = useState<View>(Views.WEEK);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [showConflicts, setShowConflicts] = useState(true);
-  const [selectedCourt, setSelectedCourt] = useState<number | 'all'>('all');
 
-  // Customer search states
-  const [customerMode, setCustomerMode] = useState<'existing' | 'new'>('existing');
-  const [customerSearchQuery, setCustomerSearchQuery] = useState('');
-  const [filteredCustomers, setFilteredCustomers] = useState(mockCustomers);
-
-  // Payment dialog states
-  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
-  const [selectedBookingForPayment, setSelectedBookingForPayment] = useState<Booking | null>(null);
-
+  // Forms
   const {
     control,
     handleSubmit,
     reset,
     watch,
     formState: { errors },
-  } = useForm<BookingFormData>();
+  } = useForm<BookingFormData>({
+    defaultValues: {
+      customer_id: 0,
+      court_id: 1,
+      booking_date: format(new Date(), 'yyyy-MM-dd'),
+      start_time: '08:00',
+      end_time: '10:00',
+      status: 'pending',
+      customer_name: '',
+      customer_phone: '',
+      customer_email: '',
+      is_new_customer: false,
+    },
+  });
 
-  // Payment form
-  const {
-    control: paymentControl,
-    handleSubmit: submitPayment,
-    reset: resetPayment,
-    formState: { errors: paymentErrors },
-  } = useForm<PaymentFormData>();
+  // Watch form values
+  const watchedCourtId = watch('court_id');
+  const watchedStartTime = watch('start_time');
+  const watchedEndTime = watch('end_time');
+  const watchedBookingDate = watch('booking_date');
 
-  // Watch form values for conflict detection
-  const watchedValues = watch();
+  // Helper functions
+  const resetCustomerForm = useCallback(() => {
+    reset((prev) => ({
+      ...prev,
+      customer_name: '',
+      customer_phone: '',
+      customer_email: '',
+      is_new_customer: false,
+    }));
+  }, [reset]);
 
   // Filter customers based on search query
-  React.useEffect(() => {
-    if (!customerSearchQuery.trim()) {
-      setFilteredCustomers(mockCustomers);
-      return;
-    }
-
-    const filtered = mockCustomers.filter(
-      (customer) =>
-        customer.full_name.toLowerCase().includes(customerSearchQuery.toLowerCase()) ||
-        customer.phone.includes(customerSearchQuery) ||
-        customer.user_id.toString().includes(customerSearchQuery)
-    );
-    setFilteredCustomers(filtered);
-  }, [customerSearchQuery]);
-
-  // Reset customer form when switching modes
-  const resetCustomerForm = () => {
-    setCustomerSearchQuery('');
-    setFilteredCustomers(mockCustomers);
-  };
-
-  // Handle payment processing
-  const handleOpenPaymentDialog = (booking: Booking) => {
-    setSelectedBookingForPayment(booking);
-    resetPayment({
-      amount: booking.total_amount,
-      payment_method: 'cash',
-      transaction_date: format(new Date(), 'yyyy-MM-dd'),
-    });
-    setIsPaymentDialogOpen(true);
-  };
-
-  const onPaymentSubmit = useCallback(
-    (data: PaymentFormData) => {
-      if (!selectedBookingForPayment) return;
-
-      // Create new transaction
-      const newTransaction: Transaction = {
-        transaction_id: Math.max(...bookings.map((b) => b.transaction?.transaction_id || 0)) + 1,
-        amount: data.amount,
-        transaction_date: data.transaction_date,
-        payment_method: data.payment_method,
-        booking_id: selectedBookingForPayment.booking_id,
-        created_by: 1, // Admin user ID
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-
-      // Update booking with payment info
-      setBookings((prev) =>
-        prev.map((booking) =>
-          booking.booking_id === selectedBookingForPayment.booking_id
-            ? {
-                ...booking,
-                payment_status: 'paid' as const,
-                transaction: newTransaction,
-              }
-            : booking
-        )
-      );
-
-      setIsPaymentDialogOpen(false);
-      setSelectedBookingForPayment(null);
-      resetPayment();
-    },
-    [selectedBookingForPayment, bookings, resetPayment]
+  const filteredCustomers = mockCustomers.filter(
+    (customer) =>
+      customer.full_name.toLowerCase().includes(customerSearchQuery.toLowerCase()) ||
+      customer.phone.includes(customerSearchQuery) ||
+      customer.customer_id.toString().includes(customerSearchQuery)
   );
-
-  const handleMarkUnpaid = (booking: Booking) => {
-    setBookings((prev) =>
-      prev.map((b) =>
-        b.booking_id === booking.booking_id
-          ? {
-              ...b,
-              payment_status: 'unpaid' as const,
-              transaction: undefined,
-            }
-          : b
-      )
-    );
-  };
-
-  // Convert bookings to calendar events
-  const events: CalendarEvent[] = useMemo(() => {
-    return bookings
-      .filter((booking) => selectedCourt === 'all' || booking.court_id === selectedCourt)
-      .map((booking) => {
-        const bookingDate = parseISO(booking.booking_date);
-        const [startHour, startMinute] = booking.start_time.split(':').map(Number);
-        const [endHour, endMinute] = booking.end_time.split(':').map(Number);
-
-        const start = new Date(bookingDate);
-        start.setHours(startHour, startMinute, 0, 0);
-
-        const end = new Date(bookingDate);
-        end.setHours(endHour, endMinute, 0, 0);
-
-        return {
-          id: booking.booking_id,
-          title: `${booking.court_name} - ${booking.customer_name}${
-            booking.payment_status === 'paid'
-              ? ' ✓'
-              : booking.payment_status === 'unpaid'
-                ? ' ⚠'
-                : ''
-          }`,
-          start,
-          end,
-          resource: booking,
-        };
-      });
-  }, [bookings, selectedCourt]);
 
   // Check for booking conflicts
   const checkConflicts = useCallback(
@@ -342,57 +244,78 @@ export const AdminBookingsPage: React.FC = () => {
       startTime: string,
       endTime: string,
       excludeBookingId?: number
-    ): boolean => {
-      const newStart = moment(`${date} ${startTime}`);
-      const newEnd = moment(`${date} ${endTime}`);
-
+    ) => {
       return bookings.some((booking) => {
-        if (booking.court_id !== courtId || booking.booking_id === excludeBookingId) {
-          return false;
-        }
+        if (excludeBookingId && booking.booking_id === excludeBookingId) return false;
+        if (booking.court_id !== courtId || booking.booking_date !== date) return false;
+        if (booking.status === 'cancelled') return false;
 
-        if (booking.booking_date !== date) {
-          return false;
-        }
+        const bookingStart = new Date(`${date} ${booking.start_time}`);
+        const bookingEnd = new Date(`${date} ${booking.end_time}`);
+        const newStart = new Date(`${date} ${startTime}`);
+        const newEnd = new Date(`${date} ${endTime}`);
 
-        const existingStart = moment(`${booking.booking_date} ${booking.start_time}`);
-        const existingEnd = moment(`${booking.booking_date} ${booking.end_time}`);
-
-        // Check if time ranges overlap
-        return newStart.isBefore(existingEnd) && newEnd.isAfter(existingStart);
+        return (
+          (newStart < bookingEnd && newEnd > bookingStart) ||
+          (bookingStart < newEnd && bookingEnd > newStart)
+        );
       });
     },
     [bookings]
   );
 
-  // Get conflicts for current form values
-  const currentConflicts = useMemo(() => {
-    if (
-      !watchedValues.court_id ||
-      !watchedValues.booking_date ||
-      !watchedValues.start_time ||
-      !watchedValues.end_time
-    ) {
+  // Check current form for conflicts
+  const currentConflicts = React.useMemo(() => {
+    if (!watchedCourtId || !watchedBookingDate || !watchedStartTime || !watchedEndTime) {
       return false;
     }
-
     return checkConflicts(
-      watchedValues.court_id,
-      watchedValues.booking_date,
-      watchedValues.start_time,
-      watchedValues.end_time,
+      watchedCourtId,
+      watchedBookingDate,
+      watchedStartTime,
+      watchedEndTime,
       selectedEvent?.resource.booking_id
     );
-  }, [watchedValues, checkConflicts, selectedEvent]);
+  }, [
+    watchedCourtId,
+    watchedBookingDate,
+    watchedStartTime,
+    watchedEndTime,
+    selectedEvent,
+    checkConflicts,
+  ]);
 
-  // Handle event selection
+  // Handle calendar slot selection
+  const handleSelectSlot = useCallback(
+    (slotInfo: SlotInfo) => {
+      setSelectedEvent(null);
+      setIsAddMode(true);
+      reset({
+        customer_id: 0,
+        court_id: 1,
+        booking_date: format(slotInfo.start, 'yyyy-MM-dd'),
+        start_time: format(slotInfo.start, 'HH:mm'),
+        end_time: format(slotInfo.end, 'HH:mm'),
+        status: 'pending',
+        customer_name: '',
+        customer_phone: '',
+        customer_email: '',
+        is_new_customer: false,
+      });
+      resetCustomerForm();
+      setCustomerMode('existing');
+      setIsDialogOpen(true);
+    },
+    [reset, resetCustomerForm]
+  );
+
+  // Handle calendar event selection
   const handleSelectEvent = useCallback(
     (event: CalendarEvent) => {
+      const booking = event.resource;
       setSelectedEvent(event);
       setIsAddMode(false);
 
-      // Populate form with selected event data
-      const booking = event.resource;
       reset({
         customer_id: booking.customer_id,
         court_id: booking.court_id,
@@ -400,123 +323,63 @@ export const AdminBookingsPage: React.FC = () => {
         start_time: booking.start_time,
         end_time: booking.end_time,
         status: booking.status,
-        customer_name: '',
+        customer_name: booking.customer_name || '',
         customer_phone: '',
         customer_email: '',
         is_new_customer: false,
       });
-
-      resetCustomerForm();
       setCustomerMode('existing');
       setIsDialogOpen(true);
     },
     [reset]
   );
 
-  // Handle slot selection for adding new booking
-  const handleSelectSlot = useCallback(
-    ({ start, end }: { start: Date; end: Date }) => {
-      setSelectedEvent(null);
-      setIsAddMode(true);
-
-      // Set default values for new booking
-      reset({
-        customer_id: 0,
-        court_id: selectedCourt === 'all' ? 1 : (selectedCourt as number),
-        booking_date: format(start, 'yyyy-MM-dd'),
-        start_time: format(start, 'HH:mm'),
-        end_time: format(end, 'HH:mm'),
-        status: 'pending',
-        customer_name: '',
-        customer_phone: '',
-        customer_email: '',
-        is_new_customer: false,
-      });
-
-      resetCustomerForm();
-      setCustomerMode('existing');
-      setIsDialogOpen(true);
-    },
-    [reset, selectedCourt]
-  );
+  // Handle payment dialog open
+  const handleOpenPaymentDialog = useCallback((booking: Booking) => {
+    setSelectedBookingForPayment(booking);
+    setIsPaymentDialogOpen(true);
+  }, []);
 
   // Handle form submission
   const onSubmit = useCallback(
     (data: BookingFormData) => {
-      if (currentConflicts) {
-        alert('Có xung đột lịch đặt sân! Vui lòng chọn thời gian khác.');
-        return;
-      }
+      if (currentConflicts) return;
 
-      let customer;
       const court = mockCourts.find((c) => c.court_id === data.court_id);
+      const customer =
+        customerMode === 'existing'
+          ? mockCustomers.find((c) => c.customer_id === data.customer_id)
+          : {
+              customer_id: Date.now(),
+              full_name: data.customer_name || '',
+              phone: data.customer_phone || '',
+            };
 
-      if (!court) {
-        alert('Không tìm thấy sân!');
-        return;
-      }
+      if (!court || !customer) return;
 
-      // Handle customer - existing or new
-      if (data.is_new_customer) {
-        // Validate new customer data
-        if (!data.customer_name.trim() || !data.customer_phone.trim()) {
-          alert('Vui lòng nhập đầy đủ thông tin khách hàng mới!');
-          return;
-        }
+      // Calculate total amount
+      const start = new Date(`2024-01-01 ${data.start_time}`);
+      const end = new Date(`2024-01-01 ${data.end_time}`);
+      const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+      const totalAmount = Math.round(hours * court.hourly_rate);
 
-        // Check if phone already exists
-        const existingCustomer = mockCustomers.find((c) => c.phone === data.customer_phone);
-        if (existingCustomer) {
-          alert('Số điện thoại này đã được đăng ký! Vui lòng sử dụng tính năng tìm khách hàng.');
-          return;
-        }
-
-        // Create new customer (in real app, this would be API call)
-        const newCustomerId = Math.max(...mockCustomers.map((c) => c.customer_id)) + 1;
-        const newUserId = Math.max(...mockCustomers.map((c) => c.user_id)) + 1;
-
-        customer = {
-          customer_id: newCustomerId,
-          user_id: newUserId,
-          full_name: data.customer_name,
-          phone: data.customer_phone,
-        };
-
-        // Add to mock data (in real app, this would be handled by backend)
-        mockCustomers.push(customer);
-
-        // Update form data with new customer ID
-        data.customer_id = newCustomerId;
-      } else {
-        customer = mockCustomers.find((c) => c.customer_id === data.customer_id);
-        if (!customer) {
-          alert('Vui lòng chọn khách hàng!');
-          return;
-        }
-      }
-
-      // Calculate total amount (simple calculation)
-      const startTime = moment(`${data.booking_date} ${data.start_time}`);
-      const endTime = moment(`${data.booking_date} ${data.end_time}`);
-      const hours = endTime.diff(startTime, 'hours', true);
-      const totalAmount = hours * court.hourly_rate;
+      const newBooking: Booking = {
+        booking_id: Date.now(),
+        booking_code: `BK${String(Date.now()).slice(-3)}`,
+        customer_id: customer.customer_id,
+        court_id: data.court_id,
+        booking_date: data.booking_date,
+        start_time: data.start_time,
+        end_time: data.end_time,
+        status: data.status,
+        total_amount: totalAmount,
+        customer_name: customer.full_name,
+        court_name: court.court_name,
+        payment_status: 'unpaid',
+      };
 
       if (isAddMode) {
         // Add new booking
-        const newBooking: Booking = {
-          booking_id: Math.max(...bookings.map((b) => b.booking_id)) + 1,
-          booking_code: `BK${String(Math.max(...bookings.map((b) => b.booking_id)) + 1).padStart(3, '0')}`,
-          customer_id: data.customer_id,
-          court_id: data.court_id,
-          booking_date: data.booking_date,
-          start_time: data.start_time,
-          end_time: data.end_time,
-          status: data.status,
-          total_amount: totalAmount,
-          customer_name: customer.full_name,
-          court_name: court.court_name,
-        };
-
         setBookings((prev) => [...prev, newBooking]);
       } else if (selectedEvent) {
         // Update existing booking
@@ -544,7 +407,7 @@ export const AdminBookingsPage: React.FC = () => {
       reset();
       resetCustomerForm();
     },
-    [currentConflicts, isAddMode, selectedEvent, bookings, reset]
+    [currentConflicts, isAddMode, selectedEvent, reset, customerMode, resetCustomerForm]
   );
 
   // Handle delete booking
@@ -556,63 +419,43 @@ export const AdminBookingsPage: React.FC = () => {
     }
   }, [selectedEvent, reset]);
 
-  // Event style getter for conflicts, status and payment
-  const eventStyleGetter = useCallback(
-    (event: CalendarEvent) => {
-      const booking = event.resource;
-      let backgroundColor = '#3174ad';
-      let border = '0px';
+  // Handle payment submission
+  const onPaymentSubmit = (data: PaymentFormData) => {
+    if (!selectedBookingForPayment) return;
 
-      // Color by status
-      switch (booking.status) {
-        case 'confirmed':
-          backgroundColor = '#4caf50';
-          break;
-        case 'pending':
-          backgroundColor = '#ff9800';
-          break;
-        case 'cancelled':
-          backgroundColor = '#f44336';
-          break;
-      }
+    const transaction: Transaction = {
+      transaction_id: Date.now(),
+      amount: data.amount,
+      transaction_date: data.transaction_date,
+      payment_method: data.payment_method,
+      booking_id: selectedBookingForPayment.booking_id,
+      created_by: 1,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
 
-      // Add payment status indicator
-      if (booking.payment_status === 'unpaid' && booking.status === 'confirmed') {
-        border = '3px dashed #f44336'; // Red dashed border for unpaid
-        backgroundColor = '#ff5722'; // Orange-red for unpaid confirmed bookings
-      } else if (booking.payment_status === 'paid') {
-        border = '2px solid #4caf50'; // Green solid border for paid
-      }
+    setBookings((prev) =>
+      prev.map((booking) =>
+        booking.booking_id === selectedBookingForPayment.booking_id
+          ? { ...booking, payment_status: 'paid', transaction }
+          : booking
+      )
+    );
 
-      // Check for conflicts if enabled
-      if (showConflicts) {
-        const hasConflict = checkConflicts(
-          booking.court_id,
-          booking.booking_date,
-          booking.start_time,
-          booking.end_time,
-          booking.booking_id
-        );
+    setIsPaymentDialogOpen(false);
+    setSelectedBookingForPayment(null);
+  };
 
-        if (hasConflict) {
-          backgroundColor = '#d32f2f';
-          border = '3px solid #b71c1c';
-        }
-      }
-
-      return {
-        style: {
-          backgroundColor,
-          borderRadius: '4px',
-          opacity: 0.8,
-          color: 'white',
-          border,
-          display: 'block',
-        },
-      };
-    },
-    [checkConflicts, showConflicts]
-  );
+  // Handle mark unpaid
+  const handleMarkUnpaid = (booking: Booking) => {
+    setBookings((prev) =>
+      prev.map((b) =>
+        b.booking_id === booking.booking_id
+          ? { ...b, payment_status: 'unpaid', transaction: undefined }
+          : b
+      )
+    );
+  };
 
   return (
     <Box>
@@ -747,42 +590,19 @@ export const AdminBookingsPage: React.FC = () => {
       </Box>
 
       {/* Calendar */}
-      <Paper sx={{ p: 2, height: 600 }}>
-        <Calendar
-          localizer={localizer}
-          events={events}
-          startAccessor="start"
-          endAccessor="end"
-          style={{ height: '100%' }}
-          onSelectEvent={handleSelectEvent}
-          onSelectSlot={handleSelectSlot}
-          selectable
-          popup
-          view={currentView}
-          onView={setCurrentView}
-          date={currentDate}
-          onNavigate={setCurrentDate}
-          eventPropGetter={eventStyleGetter}
-          step={30}
-          timeslots={2}
-          min={new Date(0, 0, 0, 6, 0, 0)} // 6 AM
-          max={new Date(0, 0, 0, 23, 0, 0)} // 11 PM
-          messages={{
-            next: 'Tiếp',
-            previous: 'Trước',
-            today: 'Hôm nay',
-            month: 'Tháng',
-            week: 'Tuần',
-            day: 'Ngày',
-            agenda: 'Lịch trình',
-            date: 'Ngày',
-            time: 'Thời gian',
-            event: 'Sự kiện',
-            noEventsInRange: 'Không có đặt sân nào trong khoảng thời gian này.',
-            showMore: (total) => `+ Xem thêm ${total}`,
-          }}
-        />
-      </Paper>
+      <BookingCalendar
+        bookings={bookings}
+        courts={mockCourts}
+        selectedCourt={selectedCourt}
+        showConflicts={showConflicts}
+        currentView={currentView}
+        currentDate={currentDate}
+        onSelectSlot={handleSelectSlot}
+        onSelectEvent={handleSelectEvent}
+        onViewChange={setCurrentView}
+        onNavigate={setCurrentDate}
+        checkConflicts={checkConflicts}
+      />
 
       {/* Booking Dialog */}
       <Dialog open={isDialogOpen} onClose={() => setIsDialogOpen(false)} maxWidth="md" fullWidth>
@@ -1132,193 +952,13 @@ export const AdminBookingsPage: React.FC = () => {
       </Dialog>
 
       {/* Payment Dialog */}
-      <Dialog
+      <PaymentDialog
         open={isPaymentDialogOpen}
         onClose={() => setIsPaymentDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <form onSubmit={submitPayment(onPaymentSubmit)}>
-          <DialogTitle>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <PaymentIcon color="primary" />
-              <Box>
-                <Typography variant="h6">Xử lý thanh toán</Typography>
-                {selectedBookingForPayment && (
-                  <Typography variant="body2" color="text.secondary">
-                    {selectedBookingForPayment.booking_code} -{' '}
-                    {selectedBookingForPayment.court_name}
-                  </Typography>
-                )}
-              </Box>
-            </Box>
-          </DialogTitle>
-
-          <DialogContent>
-            <Box sx={{ display: 'grid', gap: 3, mt: 1 }}>
-              {/* Booking Info */}
-              {selectedBookingForPayment && (
-                <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
-                  <Typography variant="subtitle2" fontWeight="600" sx={{ mb: 1 }}>
-                    Thông tin đặt sân
-                  </Typography>
-                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                    <Typography variant="body2">
-                      <strong>Khách hàng:</strong> {selectedBookingForPayment.customer_name}
-                    </Typography>
-                    <Typography variant="body2">
-                      <strong>Sân:</strong> {selectedBookingForPayment.court_name}
-                    </Typography>
-                    <Typography variant="body2">
-                      <strong>Ngày:</strong>{' '}
-                      {format(parseISO(selectedBookingForPayment.booking_date), 'dd/MM/yyyy')}
-                    </Typography>
-                    <Typography variant="body2">
-                      <strong>Thời gian:</strong> {selectedBookingForPayment.start_time} -{' '}
-                      {selectedBookingForPayment.end_time}
-                    </Typography>
-                  </Box>
-                </Paper>
-              )}
-
-              {/* Payment Amount */}
-              <Controller
-                name="amount"
-                control={paymentControl}
-                rules={{
-                  required: 'Vui lòng nhập số tiền',
-                  min: { value: 1, message: 'Số tiền phải lớn hơn 0' },
-                }}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Số tiền thanh toán"
-                    type="number"
-                    InputProps={{
-                      endAdornment: <InputAdornment position="end">VNĐ</InputAdornment>,
-                    }}
-                    error={!!paymentErrors.amount}
-                    helperText={paymentErrors.amount?.message}
-                    fullWidth
-                  />
-                )}
-              />
-
-              {/* Payment Method */}
-              <Controller
-                name="payment_method"
-                control={paymentControl}
-                rules={{ required: 'Vui lòng chọn phương thức thanh toán' }}
-                render={({ field }) => (
-                  <FormControl fullWidth error={!!paymentErrors.payment_method}>
-                    <InputLabel>Phương thức thanh toán</InputLabel>
-                    <Select {...field} label="Phương thức thanh toán">
-                      <MenuItem value="cash">
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <MoneyIcon color="success" fontSize="small" />
-                          Tiền mặt
-                        </Box>
-                      </MenuItem>
-                      <MenuItem value="transfer">
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <BankIcon color="primary" fontSize="small" />
-                          Chuyển khoản
-                        </Box>
-                      </MenuItem>
-                    </Select>
-                    {paymentErrors.payment_method && (
-                      <Typography variant="caption" color="error" sx={{ mt: 1 }}>
-                        {paymentErrors.payment_method.message}
-                      </Typography>
-                    )}
-                  </FormControl>
-                )}
-              />
-
-              {/* Transaction Date */}
-              <Controller
-                name="transaction_date"
-                control={paymentControl}
-                rules={{ required: 'Vui lòng chọn ngày thanh toán' }}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Ngày thanh toán"
-                    type="date"
-                    InputLabelProps={{ shrink: true }}
-                    error={!!paymentErrors.transaction_date}
-                    helperText={paymentErrors.transaction_date?.message}
-                    fullWidth
-                  />
-                )}
-              />
-
-              {/* Current Payment Status */}
-              {selectedBookingForPayment?.payment_status && (
-                <Alert
-                  severity={
-                    selectedBookingForPayment.payment_status === 'paid' ? 'success' : 'warning'
-                  }
-                  icon={
-                    selectedBookingForPayment.payment_status === 'paid' ? (
-                      <CheckCircleIcon />
-                    ) : (
-                      <WarningIcon />
-                    )
-                  }
-                >
-                  <Typography variant="body2">
-                    Trạng thái hiện tại:{' '}
-                    <strong>
-                      {selectedBookingForPayment.payment_status === 'paid'
-                        ? 'Đã thanh toán'
-                        : 'Chưa thanh toán'}
-                    </strong>
-                    {selectedBookingForPayment.transaction && (
-                      <>
-                        <br />
-                        Phương thức:{' '}
-                        {selectedBookingForPayment.transaction.payment_method === 'cash'
-                          ? 'Tiền mặt'
-                          : 'Chuyển khoản'}
-                        <br />
-                        Ngày thanh toán:{' '}
-                        {format(
-                          parseISO(selectedBookingForPayment.transaction.transaction_date),
-                          'dd/MM/yyyy'
-                        )}
-                      </>
-                    )}
-                  </Typography>
-                </Alert>
-              )}
-            </Box>
-          </DialogContent>
-
-          <DialogActions>
-            {selectedBookingForPayment?.payment_status === 'paid' && (
-              <Button
-                color="warning"
-                onClick={() => {
-                  if (selectedBookingForPayment) {
-                    handleMarkUnpaid(selectedBookingForPayment);
-                    setIsPaymentDialogOpen(false);
-                    setSelectedBookingForPayment(null);
-                  }
-                }}
-              >
-                Đánh dấu chưa thanh toán
-              </Button>
-            )}
-            <Button onClick={() => setIsPaymentDialogOpen(false)}>Hủy</Button>
-            <Button type="submit" variant="contained" color="success" startIcon={<PaymentIcon />}>
-              {selectedBookingForPayment?.payment_status === 'paid'
-                ? 'Cập nhật thanh toán'
-                : 'Xác nhận thanh toán'}
-            </Button>
-          </DialogActions>
-        </form>
-      </Dialog>
+        booking={selectedBookingForPayment}
+        onPaymentSubmit={onPaymentSubmit}
+        onMarkUnpaid={handleMarkUnpaid}
+      />
     </Box>
   );
 };
