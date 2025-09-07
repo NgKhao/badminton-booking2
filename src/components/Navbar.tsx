@@ -5,7 +5,6 @@ import {
   Typography,
   Button,
   IconButton,
-  Badge,
   Avatar,
   Menu,
   MenuItem,
@@ -13,12 +12,10 @@ import {
   Container,
 } from '@mui/material';
 import {
-  Notifications as NotificationsIcon,
   SportsBasketball as BadmintonIcon,
   ExitToApp,
   Person,
   History,
-  Chat,
   Home,
   EventNote,
   SportsTennis,
@@ -31,7 +28,7 @@ interface NavbarProps {
   onOpenChat?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
+export const Navbar: React.FC<NavbarProps> = () => {
   const { user, logout, isAuthenticated } = useAuthStore();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const location = useLocation();
@@ -55,7 +52,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
   ];
 
   const authenticatedNavItems = [
-    { label: 'Dashboard', path: '/dashboard', icon: Home },
+    { label: 'Trang chủ', path: '/', icon: Home },
     { label: 'Xem sân', path: '/courts', icon: SportsTennis },
     { label: 'Đặt sân', path: '/booking', icon: EventNote },
     { label: 'Lịch sử', path: '/bookings', icon: History },
@@ -114,21 +111,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
           {/* Navigation Actions */}
           {isAuthenticated ? (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              {/* AI Chat Button */}
-              <IconButton
-                onClick={onOpenChat}
-                sx={{ color: 'text.secondary', '&:hover': { color: 'primary.main' } }}
-              >
-                <Chat />
-              </IconButton>
-
-              {/* Notifications */}
-              <IconButton sx={{ color: 'text.secondary', '&:hover': { color: 'primary.main' } }}>
-                <Badge badgeContent={2} color="error">
-                  <NotificationsIcon />
-                </Badge>
-              </IconButton>
-
               {/* User Menu */}
               <IconButton onClick={handleMenu} sx={{ ml: 1 }}>
                 <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>

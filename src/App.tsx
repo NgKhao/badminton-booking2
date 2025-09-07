@@ -11,7 +11,6 @@ import { Navbar } from './components/Navbar';
 // Pages
 import { HomePage } from './pages/user/HomePage';
 import { AuthPage } from './pages/user/AuthPage';
-import { UserDashboard } from './pages/user/UserDashboard';
 import { BookingPage } from './pages/user/BookingPage';
 import { BookingHistoryPage } from './pages/user/BookingHistoryPage';
 import { ProfilePage } from './pages/user/UserProfilePage';
@@ -47,10 +46,10 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return isAuthenticated ? <>{children}</> : <Navigate to="/auth" replace />;
 };
 
-// Public Route Component (redirect to dashboard if authenticated)
+// Public Route Component (redirect to home if authenticated)
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuthStore();
-  return !isAuthenticated ? <>{children}</> : <Navigate to="/dashboard" replace />;
+  return !isAuthenticated ? <>{children}</> : <Navigate to="/courts" replace />;
 };
 
 function App() {
@@ -82,14 +81,7 @@ function App() {
             <Box component="main">
               <Routes>
                 {/* Public Routes */}
-                <Route
-                  path="/"
-                  element={
-                    <PublicRoute>
-                      <HomePage />
-                    </PublicRoute>
-                  }
-                />
+                <Route path="/" element={<HomePage />} />
                 <Route
                   path="/auth"
                   element={
@@ -103,16 +95,6 @@ function App() {
                 <Route path="/courts" element={<CourtsPage />} />
 
                 {/* Protected Routes */}
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <UserDashboard />
-                    </ProtectedRoute>
-                  }
-                />
-
-                {/* TODO: Add more protected routes */}
                 <Route
                   path="/booking"
                   element={
