@@ -45,6 +45,8 @@ import {
   WbSunny,
   AcUnit,
   TrendingUp,
+  Image,
+  CloudUpload,
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 
@@ -81,7 +83,7 @@ const mockCourts: Court[] = [
     status: 'available',
     hourly_rate: 150000,
     description: 'Sân cầu lông VIP với điều hòa và ánh sáng LED chuyên nghiệp',
-    images: ['/api/placeholder/400/300'],
+    images: ['https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400'],
     is_active: true,
     created_at: '2025-01-01T00:00:00Z',
     updated_at: '2025-01-01T00:00:00Z',
@@ -93,7 +95,7 @@ const mockCourts: Court[] = [
     status: 'available',
     hourly_rate: 120000,
     description: 'Sân cầu lông tiêu chuẩn với trang thiết bị đầy đủ',
-    images: ['/api/placeholder/400/300'],
+    images: ['https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=400'],
     is_active: true,
     created_at: '2025-01-01T00:00:00Z',
     updated_at: '2025-01-01T00:00:00Z',
@@ -105,7 +107,7 @@ const mockCourts: Court[] = [
     status: 'maintenance',
     hourly_rate: 100000,
     description: 'Sân ngoài trời rộng rãi với view thiên nhiên đẹp',
-    images: ['/api/placeholder/400/300'],
+    images: ['https://images.unsplash.com/photo-1593786481097-55d2b11fee07?w=400'],
     is_active: true,
     created_at: '2025-01-01T00:00:00Z',
     updated_at: '2025-01-01T00:00:00Z',
@@ -117,7 +119,7 @@ const mockCourts: Court[] = [
     status: 'unavailable',
     hourly_rate: 100000,
     description: 'Sân ngoài trời với không gian thoáng đãng',
-    images: ['/api/placeholder/400/300'],
+    images: [],
     is_active: false,
     created_at: '2025-01-01T00:00:00Z',
     updated_at: '2025-01-01T00:00:00Z',
@@ -149,6 +151,10 @@ export const AdminCourtsPage: React.FC = () => {
     images: [],
     is_active: true,
   });
+
+  // Image upload state
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
 
   // Snackbar state
   const [snackbar, setSnackbar] = useState({
@@ -218,6 +224,55 @@ export const AdminCourtsPage: React.FC = () => {
     }).format(amount);
   };
 
+  // Handle file upload
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setSnackbar({
+          open: true,
+          message: 'Vui lòng chọn file hình ảnh!',
+          severity: 'error',
+        });
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setSnackbar({
+          open: true,
+          message: 'Kích thước file không được vượt quá 5MB!',
+          severity: 'error',
+        });
+        return;
+      }
+
+      setSelectedFile(file);
+
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        setImagePreview(result);
+        setFormData({
+          ...formData,
+          images: [result], // Store base64 string for now
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setSelectedFile(null);
+    setImagePreview('');
+    setFormData({
+      ...formData,
+      images: [],
+    });
+  };
+
   // CRUD operations
   const handleAdd = () => {
     setEditMode(false);
@@ -230,6 +285,8 @@ export const AdminCourtsPage: React.FC = () => {
       images: [],
       is_active: true,
     });
+    setSelectedFile(null);
+    setImagePreview('');
     setOpenDialog(true);
   };
 
@@ -245,6 +302,14 @@ export const AdminCourtsPage: React.FC = () => {
       images: court.images,
       is_active: court.is_active,
     });
+
+    // Set preview for existing image
+    if (court.images.length > 0) {
+      setImagePreview(court.images[0]);
+    } else {
+      setImagePreview('');
+    }
+    setSelectedFile(null);
     setOpenDialog(true);
   };
 
@@ -496,6 +561,7 @@ export const AdminCourtsPage: React.FC = () => {
             <TableHead>
               <TableRow>
                 <TableCell>Sân</TableCell>
+                <TableCell>Hình ảnh</TableCell>
                 <TableCell>Loại sân</TableCell>
                 <TableCell>Trạng thái</TableCell>
                 <TableCell>Giá/giờ</TableCell>
@@ -528,6 +594,39 @@ export const AdminCourtsPage: React.FC = () => {
                         </Typography>
                       </Box>
                     </Box>
+                  </TableCell>
+                  <TableCell>
+                    {court.images.length > 0 ? (
+                      <Box
+                        component="img"
+                        src={court.images[0]}
+                        alt={court.court_name}
+                        sx={{
+                          width: 60,
+                          height: 40,
+                          borderRadius: 1,
+                          objectFit: 'cover',
+                          border: '1px solid',
+                          borderColor: 'divider',
+                        }}
+                      />
+                    ) : (
+                      <Box
+                        sx={{
+                          width: 60,
+                          height: 40,
+                          borderRadius: 1,
+                          bgcolor: 'grey.100',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          border: '1px solid',
+                          borderColor: 'divider',
+                        }}
+                      >
+                        <Image sx={{ fontSize: 20, color: 'grey.400' }} />
+                      </Box>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -663,6 +762,84 @@ export const AdminCourtsPage: React.FC = () => {
               multiline
               rows={3}
             />
+            <Box>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                Hình ảnh sân
+              </Typography>
+
+              {/* File Upload Input */}
+              <Box sx={{ mb: 2 }}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  style={{ display: 'none' }}
+                  id="image-upload"
+                />
+                <label htmlFor="image-upload">
+                  <Button
+                    variant="outlined"
+                    component="span"
+                    startIcon={<CloudUpload />}
+                    fullWidth
+                    sx={{
+                      py: 1.5,
+                      borderStyle: 'dashed',
+                      '&:hover': {
+                        borderStyle: 'dashed',
+                      },
+                    }}
+                  >
+                    {selectedFile ? selectedFile.name : 'Chọn hình ảnh từ máy tính'}
+                  </Button>
+                </label>
+              </Box>
+
+              {/* Image Preview */}
+              {imagePreview && (
+                <Box sx={{ position: 'relative', display: 'inline-block' }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    Xem trước:
+                  </Typography>
+                  <Box
+                    component="img"
+                    src={imagePreview}
+                    alt="Preview"
+                    sx={{
+                      width: 200,
+                      height: 120,
+                      borderRadius: 1,
+                      objectFit: 'cover',
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      display: 'block',
+                    }}
+                  />
+                  <IconButton
+                    size="small"
+                    onClick={removeImage}
+                    sx={{
+                      position: 'absolute',
+                      top: 25,
+                      right: 5,
+                      bgcolor: 'error.main',
+                      color: 'white',
+                      '&:hover': {
+                        bgcolor: 'error.dark',
+                      },
+                    }}
+                  >
+                    <Delete fontSize="small" />
+                  </IconButton>
+                </Box>
+              )}
+
+              {!imagePreview && (
+                <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                  Chọn file JPG, PNG hoặc GIF (tối đa 5MB)
+                </Typography>
+              )}
+            </Box>
             <FormControlLabel
               control={
                 <Switch
@@ -733,6 +910,42 @@ export const AdminCourtsPage: React.FC = () => {
                 <Typography variant="h6" color="primary">
                   {formatCurrency(selectedCourt.hourly_rate)}
                 </Typography>
+              </Box>
+              <Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  Hình ảnh sân
+                </Typography>
+                {selectedCourt.images.length > 0 ? (
+                  <Box
+                    component="img"
+                    src={selectedCourt.images[0]}
+                    alt={selectedCourt.court_name}
+                    sx={{
+                      width: 200,
+                      height: 120,
+                      borderRadius: 1,
+                      objectFit: 'cover',
+                      border: '1px solid',
+                      borderColor: 'divider',
+                    }}
+                  />
+                ) : (
+                  <Box
+                    sx={{
+                      width: 200,
+                      height: 120,
+                      borderRadius: 1,
+                      bgcolor: 'grey.100',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: '1px solid',
+                      borderColor: 'divider',
+                    }}
+                  >
+                    <Image sx={{ fontSize: 40, color: 'grey.400' }} />
+                  </Box>
+                )}
               </Box>
               <Box>
                 <Typography variant="body2" color="text.secondary">

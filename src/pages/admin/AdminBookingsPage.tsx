@@ -44,6 +44,7 @@ import {
   Payment as PaymentIcon,
   Money as MoneyIcon,
   AccountBalance as BankIcon,
+  EventNote,
 } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
 import { format, parseISO } from 'date-fns';
@@ -616,173 +617,203 @@ export const AdminBookingsPage: React.FC = () => {
 
   return (
     <Box>
-      {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1" fontWeight="bold">
+      {/* Page Header */}
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'text.primary', mb: 1 }}>
           Quản lý đặt sân
         </Typography>
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={showConflicts}
-                onChange={(e) => setShowConflicts(e.target.checked)}
-                color="warning"
-              />
-            }
-            label="Hiển thị xung đột"
-          />
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel>Lọc sân</InputLabel>
-            <Select
-              value={selectedCourt}
-              onChange={(e) => setSelectedCourt(e.target.value as number | 'all')}
-              label="Lọc sân"
-            >
-              <MenuItem value="all">Tất cả sân</MenuItem>
-              {mockCourts.map((court) => (
-                <MenuItem key={court.court_id} value={court.court_id}>
-                  {court.court_name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => {
-              setSelectedEvent(null);
-              setIsAddMode(true);
-              reset({
-                customer_id: 0,
-                court_id: 1,
-                booking_date: format(new Date(), 'yyyy-MM-dd'),
-                start_time: '08:00',
-                end_time: '10:00',
-                status: 'pending',
-                customer_name: '',
-                customer_phone: '',
-                customer_email: '',
-                is_new_customer: false,
-              });
-              resetCustomerForm();
-              setCustomerMode('existing');
-              setIsDialogOpen(true);
-            }}
-          >
-            Thêm đặt sân
-          </Button>
-        </Box>
+        <Typography variant="body1" color="text.secondary">
+          Quản lý và theo dõi các đơn đặt sân cầu lông
+        </Typography>
       </Box>
 
       {/* Stats Cards */}
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr 1fr' },
+          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
           gap: 3,
-          mb: 3,
+          mb: 4,
         }}
       >
-        <Card>
-          <CardContent sx={{ p: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <CheckCircleIcon color="success" />
+        <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
-                <Typography variant="h6" component="div">
-                  {bookings.filter((b) => b.status === 'confirmed').length}
-                </Typography>
-                <Typography color="text.secondary" variant="body2">
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                   Đã xác nhận
                 </Typography>
+                <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                  {bookings.filter((b) => b.status === 'confirmed').length}
+                </Typography>
               </Box>
+              <CheckCircleIcon sx={{ fontSize: 40, color: 'success.main' }} />
             </Box>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent sx={{ p: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <WarningIcon color="warning" />
+
+        <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
-                <Typography variant="h6" component="div">
-                  {bookings.filter((b) => b.status === 'pending').length}
-                </Typography>
-                <Typography color="text.secondary" variant="body2">
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                   Chờ xác nhận
                 </Typography>
+                <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                  {bookings.filter((b) => b.status === 'pending').length}
+                </Typography>
               </Box>
+              <WarningIcon sx={{ fontSize: 40, color: 'warning.main' }} />
             </Box>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent sx={{ p: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <CancelIcon color="error" />
+
+        <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
-                <Typography variant="h6" component="div">
-                  {bookings.filter((b) => b.status === 'cancelled').length}
-                </Typography>
-                <Typography color="text.secondary" variant="body2">
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                   Đã hủy
                 </Typography>
+                <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                  {bookings.filter((b) => b.status === 'cancelled').length}
+                </Typography>
               </Box>
+              <CancelIcon sx={{ fontSize: 40, color: 'error.main' }} />
             </Box>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent sx={{ p: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <RefreshIcon color="info" />
+
+        <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
-                <Typography variant="h6" component="div">
-                  {new Set(bookings.map((b) => `${b.booking_date}-${b.court_id}`)).size}
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  Tổng lượt đặt
                 </Typography>
-                <Typography color="text.secondary" variant="body2">
-                  Slot đã đặt
+                <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                  {bookings.length}
                 </Typography>
               </Box>
+              <EventNote sx={{ fontSize: 40, color: 'primary.main' }} />
             </Box>
           </CardContent>
         </Card>
       </Box>
 
+      {/* Controls */}
+      <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', mb: 3 }}>
+        <Box sx={{ p: 3 }}>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={showConflicts}
+                  onChange={(e) => setShowConflicts(e.target.checked)}
+                  color="warning"
+                />
+              }
+              label="Hiển thị xung đột"
+            />
+
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Lọc sân</InputLabel>
+              <Select
+                value={selectedCourt}
+                onChange={(e) => setSelectedCourt(e.target.value as number | 'all')}
+                label="Lọc sân"
+              >
+                <MenuItem value="all">Tất cả sân</MenuItem>
+                {mockCourts.map((court) => (
+                  <MenuItem key={court.court_id} value={court.court_id}>
+                    {court.court_name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <Button
+              variant="outlined"
+              startIcon={<RefreshIcon />}
+              onClick={() => {
+                setCurrentDate(new Date());
+                setSelectedCourt('all');
+                setShowConflicts(true);
+              }}
+            >
+              Làm mới
+            </Button>
+
+            <Box sx={{ flexGrow: 1 }} />
+
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => {
+                setSelectedEvent(null);
+                setIsAddMode(true);
+                reset({
+                  customer_id: 0,
+                  court_id: 1,
+                  booking_date: format(new Date(), 'yyyy-MM-dd'),
+                  start_time: '08:00',
+                  end_time: '10:00',
+                  status: 'pending',
+                  customer_name: '',
+                  customer_phone: '',
+                  customer_email: '',
+                  is_new_customer: false,
+                });
+                resetCustomerForm();
+                setCustomerMode('existing');
+                setIsDialogOpen(true);
+              }}
+            >
+              Thêm đặt sân
+            </Button>
+          </Box>
+        </Box>
+      </Card>
+
       {/* Calendar */}
-      <Paper sx={{ p: 2, height: 600 }}>
-        <Calendar
-          localizer={localizer}
-          events={events}
-          startAccessor="start"
-          endAccessor="end"
-          style={{ height: '100%' }}
-          onSelectEvent={handleSelectEvent}
-          onSelectSlot={handleSelectSlot}
-          selectable
-          popup
-          view={currentView}
-          onView={setCurrentView}
-          date={currentDate}
-          onNavigate={setCurrentDate}
-          eventPropGetter={eventStyleGetter}
-          step={30}
-          timeslots={2}
-          min={new Date(0, 0, 0, 6, 0, 0)} // 6 AM
-          max={new Date(0, 0, 0, 23, 0, 0)} // 11 PM
-          messages={{
-            next: 'Tiếp',
-            previous: 'Trước',
-            today: 'Hôm nay',
-            month: 'Tháng',
-            week: 'Tuần',
-            day: 'Ngày',
-            agenda: 'Lịch trình',
-            date: 'Ngày',
-            time: 'Thời gian',
-            event: 'Sự kiện',
-            noEventsInRange: 'Không có đặt sân nào trong khoảng thời gian này.',
-            showMore: (total) => `+ Xem thêm ${total}`,
-          }}
-        />
-      </Paper>
+      <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
+        <Box sx={{ p: 3 }}>
+          <Calendar
+            localizer={localizer}
+            events={events}
+            startAccessor="start"
+            endAccessor="end"
+            style={{ height: 600 }}
+            onSelectEvent={handleSelectEvent}
+            onSelectSlot={handleSelectSlot}
+            selectable
+            popup
+            view={currentView}
+            onView={setCurrentView}
+            date={currentDate}
+            onNavigate={setCurrentDate}
+            eventPropGetter={eventStyleGetter}
+            step={30}
+            timeslots={2}
+            min={new Date(0, 0, 0, 6, 0, 0)} // 6 AM
+            max={new Date(0, 0, 0, 23, 0, 0)} // 11 PM
+            messages={{
+              next: 'Tiếp',
+              previous: 'Trước',
+              today: 'Hôm nay',
+              month: 'Tháng',
+              week: 'Tuần',
+              day: 'Ngày',
+              agenda: 'Lịch trình',
+              date: 'Ngày',
+              time: 'Thời gian',
+              event: 'Sự kiện',
+              noEventsInRange: 'Không có đặt sân nào trong khoảng thời gian này.',
+              showMore: (total) => `+ Xem thêm ${total}`,
+            }}
+          />
+        </Box>
+      </Card>
 
       {/* Booking Dialog */}
       <Dialog open={isDialogOpen} onClose={() => setIsDialogOpen(false)} maxWidth="md" fullWidth>

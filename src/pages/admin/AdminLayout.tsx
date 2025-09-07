@@ -76,12 +76,6 @@ const menuItems = [
     path: '/admin/analytics',
     description: 'Phân tích doanh thu',
   },
-  {
-    text: 'Cài đặt',
-    icon: <Settings />,
-    path: '/admin/settings',
-    description: 'Cấu hình hệ thống',
-  },
 ];
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
@@ -148,7 +142,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       else if (pathname === 'bookings') displayName = 'Quản lý đặt sân';
       else if (pathname === 'customers') displayName = 'Quản lý khách hàng';
       else if (pathname === 'analytics') displayName = 'Báo cáo & Thống kê';
-      else if (pathname === 'settings') displayName = 'Cài đặt';
 
       if (isLast) {
         breadcrumbs.push(

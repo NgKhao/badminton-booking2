@@ -23,6 +23,7 @@ import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminCourtsPage } from './pages/admin/AdminCourtsPage';
 import { AdminCustomersPage } from './pages/admin/AdminCustomersPage';
 import { AdminBookingsPage } from './pages/admin/AdminBookingsPage';
+import { AdminAnalyticsPage } from './pages/admin/AdminAnalyticsPage';
 
 // Components
 import { ChatFAB } from './components/AIChat';
@@ -150,6 +151,7 @@ function App() {
                   <Route path="courts" element={<AdminCourtsPage />} />
                   <Route path="customers" element={<AdminCustomersPage />} />
                   <Route path="bookings" element={<AdminBookingsPage />} />
+                  <Route path="analytics" element={<AdminAnalyticsPage />} />
                   {/* Add more admin routes here later */}
                 </Route>
 
