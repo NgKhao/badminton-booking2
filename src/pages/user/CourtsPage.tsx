@@ -31,6 +31,7 @@ import {
 } from '@mui/icons-material';
 import type { Court } from '../../types';
 import { useAuthStore } from '../../store/authStore';
+import courtImage from '../../assets/court.jpg';
 
 // Mock data cho sân cầu lông
 const mockCourts: Court[] = [
@@ -41,7 +42,7 @@ const mockCourts: Court[] = [
     status: 'available',
     hourly_rate: 150000,
     description: 'Sân VIP với đầy đủ tiện nghi cao cấp, điều hòa mát lạnh, âm thanh chuyên nghiệp',
-    images: ['/api/placeholder/400/300'],
+    images: [courtImage],
     is_active: true,
     created_at: '2023-01-01T00:00:00Z',
     updated_at: '2023-01-01T00:00:00Z',
@@ -53,7 +54,7 @@ const mockCourts: Court[] = [
     status: 'available',
     hourly_rate: 100000,
     description: 'Sân ngoài trời thoáng mát, không gian rộng rãi, giá cả phải chăng',
-    images: ['/api/placeholder/400/300'],
+    images: [courtImage],
     is_active: true,
     created_at: '2023-01-01T00:00:00Z',
     updated_at: '2023-01-01T00:00:00Z',
@@ -65,7 +66,7 @@ const mockCourts: Court[] = [
     status: 'available',
     hourly_rate: 200000,
     description: 'Sân premium với dịch vụ 5 sao, VIP lounge, đồ uống miễn phí',
-    images: ['/api/placeholder/400/300'],
+    images: [courtImage],
     is_active: true,
     created_at: '2023-01-01T00:00:00Z',
     updated_at: '2023-01-01T00:00:00Z',
@@ -77,7 +78,7 @@ const mockCourts: Court[] = [
     status: 'available',
     hourly_rate: 90000,
     description: 'Sân ngoài trời giá rẻ, phù hợp cho việc luyện tập hàng ngày',
-    images: ['/api/placeholder/400/300'],
+    images: [courtImage],
     is_active: true,
     created_at: '2023-01-01T00:00:00Z',
     updated_at: '2023-01-01T00:00:00Z',
@@ -89,7 +90,7 @@ const mockCourts: Court[] = [
     status: 'available',
     hourly_rate: 120000,
     description: 'Sân standard với chất lượng tốt, giá cả hợp lý',
-    images: ['/api/placeholder/400/300'],
+    images: [courtImage],
     is_active: true,
     created_at: '2023-01-01T00:00:00Z',
     updated_at: '2023-01-01T00:00:00Z',
@@ -101,7 +102,7 @@ const mockCourts: Court[] = [
     status: 'maintenance',
     hourly_rate: 120000,
     description: 'Sân đang bảo trì, sẽ mở lại sớm',
-    images: ['/api/placeholder/400/300'],
+    images: [courtImage],
     is_active: true,
     created_at: '2023-01-01T00:00:00Z',
     updated_at: '2023-01-01T00:00:00Z',
@@ -305,7 +306,7 @@ export const CourtsPage: React.FC = () => {
               <CardMedia
                 component="img"
                 height="200"
-                image={court.images?.[0] || '/api/placeholder/400/300'}
+                image={court.images?.[0] || courtImage}
                 alt={court.court_name}
                 sx={{ height: 192, objectFit: 'cover' }}
               />
@@ -393,7 +394,7 @@ export const CourtsPage: React.FC = () => {
             {selectedCourt && (
               <Box>
                 <img
-                  src={selectedCourt.images?.[0] || '/api/placeholder/600/400'}
+                  src={selectedCourt.images?.[0] || courtImage}
                   alt={selectedCourt.court_name}
                   style={{
                     width: '100%',

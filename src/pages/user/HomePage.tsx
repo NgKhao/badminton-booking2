@@ -53,6 +53,9 @@ import {
 } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 import { ChatFAB } from '../../components/AIChat';
+import banner from '../../assets/banner.jpg';
+import courtImage from '../../assets/court.jpg';
+import outdoor from '../../assets/outdoor.jpg';
 
 // Court data based on database schema
 const courtFeatures = [
@@ -68,7 +71,7 @@ const courtFeatures = [
     ],
     icon: <AcUnit />,
     color: 'primary' as const,
-    imageUrl: '/api/placeholder/400/300',
+    imageUrl: courtImage,
   },
   {
     type: 'Ngoài trời',
@@ -82,7 +85,7 @@ const courtFeatures = [
     ],
     icon: <WbSunny />,
     color: 'secondary' as const,
-    imageUrl: '/api/placeholder/400/300',
+    imageUrl: outdoor,
   },
 ];
 
@@ -261,7 +264,7 @@ export const HomePage = () => {
 
             <Box sx={{ position: 'relative', textAlign: 'center' }}>
               <img
-                src="/api/placeholder/500/400"
+                src={banner}
                 alt="Sân cầu lông hiện đại"
                 style={{
                   width: '100%',

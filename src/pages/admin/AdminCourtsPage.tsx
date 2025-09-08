@@ -45,9 +45,9 @@ import {
   WbSunny,
   AcUnit,
   TrendingUp,
-  Image,
   CloudUpload,
 } from '@mui/icons-material';
+import courtImage from '../../assets/court.jpg';
 import { useTheme } from '@mui/material/styles';
 
 // Types based on database schema
@@ -83,7 +83,7 @@ const mockCourts: Court[] = [
     status: 'available',
     hourly_rate: 150000,
     description: 'Sân cầu lông VIP với điều hòa và ánh sáng LED chuyên nghiệp',
-    images: ['https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400'],
+    images: [courtImage],
     is_active: true,
     created_at: '2025-01-01T00:00:00Z',
     updated_at: '2025-01-01T00:00:00Z',
@@ -95,7 +95,7 @@ const mockCourts: Court[] = [
     status: 'available',
     hourly_rate: 120000,
     description: 'Sân cầu lông tiêu chuẩn với trang thiết bị đầy đủ',
-    images: ['https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=400'],
+    images: [courtImage],
     is_active: true,
     created_at: '2025-01-01T00:00:00Z',
     updated_at: '2025-01-01T00:00:00Z',
@@ -107,7 +107,7 @@ const mockCourts: Court[] = [
     status: 'maintenance',
     hourly_rate: 100000,
     description: 'Sân ngoài trời rộng rãi với view thiên nhiên đẹp',
-    images: ['https://images.unsplash.com/photo-1593786481097-55d2b11fee07?w=400'],
+    images: [courtImage],
     is_active: true,
     created_at: '2025-01-01T00:00:00Z',
     updated_at: '2025-01-01T00:00:00Z',
@@ -119,7 +119,7 @@ const mockCourts: Court[] = [
     status: 'unavailable',
     hourly_rate: 100000,
     description: 'Sân ngoài trời với không gian thoáng đãng',
-    images: [],
+    images: [courtImage],
     is_active: false,
     created_at: '2025-01-01T00:00:00Z',
     updated_at: '2025-01-01T00:00:00Z',
@@ -599,7 +599,7 @@ export const AdminCourtsPage: React.FC = () => {
                     {court.images.length > 0 ? (
                       <Box
                         component="img"
-                        src={court.images[0]}
+                        src={court.images[0] || courtImage}
                         alt={court.court_name}
                         sx={{
                           width: 60,
@@ -612,20 +612,18 @@ export const AdminCourtsPage: React.FC = () => {
                       />
                     ) : (
                       <Box
+                        component="img"
+                        src={courtImage}
+                        alt={court.court_name}
                         sx={{
                           width: 60,
                           height: 40,
                           borderRadius: 1,
-                          bgcolor: 'grey.100',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
+                          objectFit: 'cover',
                           border: '1px solid',
                           borderColor: 'divider',
                         }}
-                      >
-                        <Image sx={{ fontSize: 20, color: 'grey.400' }} />
-                      </Box>
+                      />
                     )}
                   </TableCell>
                   <TableCell>
@@ -918,7 +916,7 @@ export const AdminCourtsPage: React.FC = () => {
                 {selectedCourt.images.length > 0 ? (
                   <Box
                     component="img"
-                    src={selectedCourt.images[0]}
+                    src={selectedCourt.images[0] || courtImage}
                     alt={selectedCourt.court_name}
                     sx={{
                       width: 200,
@@ -931,20 +929,18 @@ export const AdminCourtsPage: React.FC = () => {
                   />
                 ) : (
                   <Box
+                    component="img"
+                    src={courtImage}
+                    alt={selectedCourt.court_name}
                     sx={{
                       width: 200,
                       height: 120,
                       borderRadius: 1,
-                      bgcolor: 'grey.100',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      objectFit: 'cover',
                       border: '1px solid',
                       borderColor: 'divider',
                     }}
-                  >
-                    <Image sx={{ fontSize: 40, color: 'grey.400' }} />
-                  </Box>
+                  />
                 )}
               </Box>
               <Box>
