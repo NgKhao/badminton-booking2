@@ -175,8 +175,10 @@ export const HomePage = () => {
       {/* Hero Section */}
       <Box
         sx={{
-          background: (theme) =>
-            `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+          background: `url(${banner})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
           color: 'white',
           py: { xs: 6, md: 10 },
           position: 'relative',
@@ -191,6 +193,9 @@ export const HomePage = () => {
                 component="h1"
                 gutterBottom
                 className="font-bold"
+                sx={{
+                  textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
+                }}
               >
                 Đặt Sân Cầu Lông
                 <br />
@@ -199,7 +204,14 @@ export const HomePage = () => {
                 </Box>
               </Typography>
 
-              <Typography variant="h6" sx={{ mb: 4, opacity: 0.9 }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  mb: 4,
+                  opacity: 0.95,
+                  textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
+                }}
+              >
                 Hệ thống đặt sân với AI tư vấn theo thời tiết, tránh trùng lịch tự động. Trải nghiệm
                 đặt sân hiện đại nhất Việt Nam!
               </Typography>
@@ -211,16 +223,30 @@ export const HomePage = () => {
                   component={Link}
                   to="/auth"
                   startIcon={<PlayArrow />}
+                  sx={{
+                    boxShadow: 3,
+                    '&:hover': { boxShadow: 6 },
+                  }}
                 >
                   Đặt Sân Ngay
                 </Button>
 
                 <Button
-                  variant="contained"
+                  variant="outlined"
                   size="large"
                   component={Link}
                   to="/courts"
                   startIcon={<SportsTennis />}
+                  sx={{
+                    borderColor: 'white',
+                    color: 'white',
+                    borderWidth: 2,
+                    '&:hover': {
+                      borderColor: 'secondary.main',
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      borderWidth: 2,
+                    },
+                  }}
                 >
                   Xem Tất Cả Sân
                 </Button>
@@ -236,99 +262,69 @@ export const HomePage = () => {
                 }}
               >
                 <Box>
-                  <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      fontWeight: 'bold',
+                      textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
+                    }}
+                  >
                     2+
                   </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      opacity: 0.9,
+                      textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
+                    }}
+                  >
                     Loại Sân
                   </Typography>
                 </Box>
                 <Box>
-                  <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      fontWeight: 'bold',
+                      textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
+                    }}
+                  >
                     24/7
                   </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      opacity: 0.9,
+                      textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
+                    }}
+                  >
                     Hỗ Trợ AI
                   </Typography>
                 </Box>
                 <Box>
-                  <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      fontWeight: 'bold',
+                      textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
+                    }}
+                  >
                     100%
                   </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      opacity: 0.9,
+                      textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
+                    }}
+                  >
                     Tự Động
                   </Typography>
                 </Box>
               </Box>
             </Box>
-
-            <Box sx={{ position: 'relative', textAlign: 'center' }}>
-              <img
-                src={banner}
-                alt="Sân cầu lông hiện đại"
-                style={{
-                  width: '100%',
-                  borderRadius: 8,
-                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                }}
-              />
-
-              {/* Floating Cards */}
-              <Paper
-                sx={{
-                  position: 'absolute',
-                  top: 2,
-                  right: -2,
-                  p: 2,
-                  bgcolor: 'background.paper',
-                  color: 'text.primary',
-                  borderRadius: 1,
-                  boxShadow: 3,
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <SmartToy color="primary" />
-                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                    AI Tư Vấn Thông Minh
-                  </Typography>
-                </Box>
-              </Paper>
-
-              <Paper
-                sx={{
-                  position: 'absolute',
-                  bottom: 2,
-                  left: -2,
-                  p: 2,
-                  bgcolor: 'background.paper',
-                  color: 'text.primary',
-                  borderRadius: 1,
-                  boxShadow: 3,
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <WbSunny color="secondary" />
-                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                    Dự Báo Thời Tiết
-                  </Typography>
-                </Box>
-              </Paper>
-            </Box>
           </Box>
         </Container>
-
-        {/* Background Pattern */}
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            width: '50%',
-            height: '100%',
-            opacity: 0.1,
-            bgcolor: 'common.white',
-          }}
-        />
       </Box>
 
       {/* Court Types Section */}
