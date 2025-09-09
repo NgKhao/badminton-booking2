@@ -23,6 +23,7 @@ import { AdminCourtsPage } from './pages/admin/AdminCourtsPage';
 import { AdminCustomersPage } from './pages/admin/AdminCustomersPage';
 import { AdminBookingsPage } from './pages/admin/AdminBookingsPage';
 import { AdminAnalyticsPage } from './pages/admin/AdminAnalyticsPage';
+import { AdminLoginPage } from './pages/admin/AdminLoginPage';
 
 // Components
 import { ChatFAB } from './components/AIChat';
@@ -44,6 +45,21 @@ const queryClient = new QueryClient({
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuthStore();
   return isAuthenticated ? <>{children}</> : <Navigate to="/auth" replace />;
+};
+
+// Admin Route Component
+const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated, user } = useAuthStore();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/admin/login" replace />;
+  }
+
+  if (user?.role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
 };
 
 // Public Route Component (redirect to home if authenticated)
@@ -120,13 +136,16 @@ function App() {
                   }
                 />
 
+                {/* Admin Login Route */}
+                <Route path="/admin/login" element={<AdminLoginPage />} />
+
                 {/* Admin Routes */}
                 <Route
                   path="/admin/*"
                   element={
-                    // <AdminRoute>
-                    <AdminLayout />
-                    // </AdminRoute>
+                    <AdminRoute>
+                      <AdminLayout />
+                    </AdminRoute>
                   }
                 >
                   <Route index element={<AdminDashboard />} />

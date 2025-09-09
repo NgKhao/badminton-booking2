@@ -1,28 +1,98 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { AuthState, User, Customer } from '../types';
 
 interface AuthStore extends AuthState {
-  login: (user: User, customer?: Customer) => void;
+  token: string | null;
+  refreshToken: string | null;
+  login: (
+    user: User,
+    customer?: Customer,
+    tokens?: { accessToken: string; refreshToken: string }
+  ) => void;
   logout: () => void;
   setLoading: (loading: boolean) => void;
   updateUser: (user: Partial<User>) => void;
+  setTokens: (accessToken: string, refreshToken: string) => void;
+  clearTokens: () => void;
 }
 
-export const useAuthStore = create<AuthStore>((set) => ({
-  user: null,
-  customer: null,
-  isAuthenticated: false,
-  loading: false,
+export const useAuthStore = create<AuthStore>()(
+  persist(
+    (set) => ({
+      user: null,
+      customer: null,
+      isAuthenticated: false,
+      loading: false,
+      token: null,
+      refreshToken: null,
 
-  login: (user: User, customer?: Customer) =>
-    set({ user, customer, isAuthenticated: true, loading: false }),
+      login: (
+        user: User,
+        customer?: Customer,
+        tokens?: { accessToken: string; refreshToken: string }
+      ) => {
+        const updates: Partial<AuthStore> = {
+          user,
+          customer,
+          isAuthenticated: true,
+          loading: false,
+        };
 
-  logout: () => set({ user: null, customer: null, isAuthenticated: false, loading: false }),
+        if (tokens) {
+          updates.token = tokens.accessToken;
+          updates.refreshToken = tokens.refreshToken;
+          // Lưu tokens vào localStorage để sử dụng với API calls
+          localStorage.setItem('accessToken', tokens.accessToken);
+          localStorage.setItem('refreshToken', tokens.refreshToken);
+        }
 
-  setLoading: (loading: boolean) => set({ loading }),
+        set(updates);
+      },
 
-  updateUser: (userData: Partial<User>) =>
-    set((state) => ({
-      user: state.user ? { ...state.user, ...userData } : null,
-    })),
-}));
+      logout: () => {
+        // Xóa tokens khỏi localStorage
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+
+        set({
+          user: null,
+          customer: null,
+          isAuthenticated: false,
+          loading: false,
+          token: null,
+          refreshToken: null,
+        });
+      },
+
+      setLoading: (loading: boolean) => set({ loading }),
+
+      updateUser: (userData: Partial<User>) =>
+        set((state) => ({
+          user: state.user ? { ...state.user, ...userData } : null,
+        })),
+
+      setTokens: (accessToken: string, refreshToken: string) => {
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+        set({ token: accessToken, refreshToken });
+      },
+
+      clearTokens: () => {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        set({ token: null, refreshToken: null });
+      },
+    }),
+    {
+      name: 'auth-storage',
+      partialize: (state) => ({
+        user: state.user,
+        customer: state.customer,
+        isAuthenticated: state.isAuthenticated,
+        token: state.token,
+        refreshToken: state.refreshToken,
+      }),
+    }
+  )
+);
