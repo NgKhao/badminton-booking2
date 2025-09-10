@@ -13,8 +13,8 @@ interface AuthStore extends AuthState {
   logout: () => void;
   setLoading: (loading: boolean) => void;
   updateUser: (user: Partial<User>) => void;
-  setTokens: (accessToken: string, refreshToken: string) => void;
   clearTokens: () => void;
+  updateTokens: (accessToken: string, refreshToken: string) => void;
 }
 
 export const useAuthStore = create<AuthStore>()(
@@ -72,16 +72,16 @@ export const useAuthStore = create<AuthStore>()(
           user: state.user ? { ...state.user, ...userData } : null,
         })),
 
-      setTokens: (accessToken: string, refreshToken: string) => {
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
-        set({ token: accessToken, refreshToken });
-      },
-
       clearTokens: () => {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         set({ token: null, refreshToken: null });
+      },
+
+      updateTokens: (accessToken: string, refreshToken: string) => {
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+        set({ token: accessToken, refreshToken });
       },
     }),
     {

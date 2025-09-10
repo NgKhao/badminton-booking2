@@ -13,6 +13,7 @@ import {
   IconButton,
   Divider,
   Link,
+  Alert,
 } from '@mui/material';
 import {
   Visibility,
@@ -24,7 +25,15 @@ import {
   SportsBasketball,
 } from '@mui/icons-material';
 import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
+import {
+  useLoginMutation,
+  useRegisterMutation,
+  type LoginRequest,
+  type RegisterRequest,
+} from '../../hooks/useApi';
 import { useAuthStore } from '../../store/authStore';
+import type { User } from '../../types';
 
 interface LoginFormData {
   email: string;
@@ -43,7 +52,94 @@ export const AuthPage: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { login, setLoading, loading } = useAuthStore();
+  const navigate = useNavigate();
+  const { login } = useAuthStore();
+
+  // Helper function để check if user is admin
+  const isAdmin = (role?: string): boolean => {
+    return role === 'ADMIN' || role === 'admin';
+  };
+
+  // Helper function để map user data
+  const mapUserData = (userInfo: {
+    id?: number;
+    email: string;
+    fullName?: string;
+    full_name?: string;
+    phone?: string;
+    role: string;
+  }): User => {
+    return {
+      user_id: userInfo.id || 0,
+      email: userInfo.email,
+      full_name: userInfo.fullName || userInfo.full_name || '',
+      phone: userInfo.phone,
+      role: isAdmin(userInfo.role) ? 'admin' : 'customer',
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+  };
+
+  // Login mutation
+  const loginMutation = useLoginMutation({
+    onSuccess: (data) => {
+      console.log('Login response:', data);
+
+      // Tạo user object từ API response
+      const user = mapUserData(data.detail.userInfo);
+
+      // Lưu tokens và user info vào store
+      login(user, undefined, {
+        accessToken: data.detail.token.accessToken,
+        refreshToken: data.detail.token.refreshToken,
+      });
+
+      // Chuyển hướng đến trang courts sau khi đăng nhập thành công
+      navigate('/courts');
+    },
+    onError: (error) => {
+      console.error('Login error:', error);
+    },
+  });
+
+  // Register mutation
+  const registerMutation = useRegisterMutation({
+    onSuccess: (data) => {
+      console.log('Register response:', data);
+
+      if (data.status === 200 && data.detail.userInfo) {
+        // Map server user to app User type
+        const user = mapUserData(data.detail.userInfo);
+
+        // Nếu có token trong response thì tự động login
+        if (data.detail.token) {
+          login(user, undefined, {
+            accessToken: data.detail.token.accessToken,
+            refreshToken: data.detail.token.refreshToken,
+          });
+
+          // Chuyển hướng đến trang courts
+          navigate('/courts');
+        } else {
+          // Nếu không có token, chuyển về tab login với thông báo
+          setTabValue(0);
+          // Có thể thêm toast notification ở đây
+          console.log('Đăng ký thành công! Vui lòng đăng nhập.');
+        }
+      }
+    },
+    onError: (error) => {
+      console.error('Register error:', error);
+    },
+  });
+
+  // Combined loading state
+  const loading = loginMutation.isPending || registerMutation.isPending;
+
+  // Error state
+  const loginError = loginMutation.error;
+  const registerError = registerMutation.error;
 
   const {
     register: registerLogin,
@@ -60,76 +156,20 @@ export const AuthPage: React.FC = () => {
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
+    // Clear error khi chuyển tab
+    loginMutation.reset();
+    registerMutation.reset();
   };
 
-  const onLoginSubmit = async (data: LoginFormData) => {
-    setLoading(true);
-    try {
-      // TODO: Call API để đăng nhập
-      console.log('Login data:', data);
-
-      // Mock response - thay thế bằng API call thực tế
-      setTimeout(() => {
-        const mockUser = {
-          user_id: 1,
-          email: data.email,
-          full_name: 'Nguyễn Văn A',
-          phone: '0123456789',
-          role: 'customer' as const,
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-
-        const mockCustomer = {
-          customer_id: 1,
-          user_id: 1,
-          phone: '0123456789',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-
-        login(mockUser, mockCustomer);
-      }, 1000);
-    } catch (error) {
-      console.error('Login error:', error);
-      setLoading(false);
-    }
+  const onLoginSubmit = (data: LoginFormData) => {
+    // Gọi API login thông qua mutation
+    loginMutation.mutate(data as LoginRequest);
   };
 
-  const onSignupSubmit = async (data: RegisterFormData) => {
-    setLoading(true);
-    try {
-      // TODO: Call API để đăng ký
-      console.log('Signup data:', data);
-
-      // Mock response - thay thế bằng API call thực tế
-      setTimeout(() => {
-        const mockUser = {
-          user_id: 1,
-          email: data.email,
-          full_name: data.full_name,
-          phone: data.phone,
-          role: 'customer' as const,
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-
-        const mockCustomer = {
-          customer_id: 1,
-          user_id: 1,
-          phone: data.phone,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-
-        login(mockUser, mockCustomer);
-      }, 1000);
-    } catch (error) {
-      console.error('Signup error:', error);
-      setLoading(false);
-    }
+  const onSignupSubmit = (data: RegisterFormData) => {
+    // Loại bỏ confirmPassword và gọi API register thông qua mutation
+    const { confirmPassword, ...registerData } = data;
+    registerMutation.mutate(registerData as RegisterRequest);
   };
 
   return (
@@ -155,6 +195,17 @@ export const AuthPage: React.FC = () => {
               <Tab label="Đăng nhập" />
               <Tab label="Đăng ký" />
             </Tabs>
+
+            {/* Error Display */}
+            {(loginError || registerError) && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {loginError?.response?.data?.messenger ||
+                  registerError?.response?.data?.messenger ||
+                  loginError?.message ||
+                  registerError?.message ||
+                  'Có lỗi xảy ra'}
+              </Alert>
+            )}
 
             {/* Login Form */}
             {tabValue === 0 && (

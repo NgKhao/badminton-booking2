@@ -22,9 +22,9 @@ import {
 } from '@mui/icons-material';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import { useMutation } from '@tanstack/react-query';
+import { useLoginMutation, type LoginRequest } from '../../hooks/useApi';
 import { useAuthStore } from '../../store/authStore';
-import { AuthAPI, isAdmin, type LoginRequest } from '../../services/authService';
+import type { User } from '../../types';
 
 interface AdminLoginFormData {
   email: string;
@@ -33,8 +33,8 @@ interface AdminLoginFormData {
 
 export const AdminLoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const { login } = useAuthStore();
   const navigate = useNavigate();
+  const { login } = useAuthStore();
 
   const {
     register,
@@ -43,9 +43,16 @@ export const AdminLoginPage: React.FC = () => {
     setError,
   } = useForm<AdminLoginFormData>();
 
-  const loginMutation = useMutation({
-    mutationFn: (credentials: LoginRequest) => AuthAPI.login(credentials),
+  // Helper function để check if user is admin
+  const isAdmin = (role?: string): boolean => {
+    return role === 'ADMIN' || role === 'admin';
+  };
+
+  // Login mutation cho admin
+  const loginMutation = useLoginMutation({
     onSuccess: (data) => {
+      console.log('Admin login response:', data);
+
       // Kiểm tra role có phải là admin không
       if (!isAdmin(data.detail.userInfo.role)) {
         setError('root', {
@@ -55,7 +62,7 @@ export const AdminLoginPage: React.FC = () => {
       }
 
       // Cập nhật auth store
-      const user = {
+      const user: User = {
         user_id: 0, // Sẽ được cập nhật từ API khác
         email: data.detail.userInfo.email,
         full_name: data.detail.userInfo.fullName,
@@ -73,15 +80,17 @@ export const AdminLoginPage: React.FC = () => {
       // Chuyển hướng đến admin dashboard
       navigate('/admin');
     },
-    onError: (error: Error) => {
+    onError: (error) => {
+      console.error('Admin login error:', error);
       setError('root', {
-        message: error.message || 'Đăng nhập thất bại',
+        message: error.response?.data?.messenger || error.message || 'Đăng nhập thất bại',
       });
     },
   });
 
   const onSubmit = (data: AdminLoginFormData) => {
-    loginMutation.mutate(data);
+    loginMutation.reset();
+    loginMutation.mutate(data as LoginRequest);
   };
 
   return (
