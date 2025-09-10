@@ -31,7 +31,7 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Chỉ xử lý token refresh cho các request đã có token và không phải auth requests
+    // Chỉ xử lý token refresh cho các request có token và không phải auth requests
     const isAuthRequest =
       originalRequest.url?.includes('/auth/login') ||
       originalRequest.url?.includes('/auth/register') ||
@@ -44,19 +44,18 @@ api.interceptors.response.use(
 
       if (refreshToken) {
         try {
-          // Gọi API refresh token với format backend
+          // Gọi API refresh token
           const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
             refreshToken,
           });
 
-          // Xử lý response từ backend (format như bạn cung cấp)
           const backendData = response.data;
 
           if (backendData.status === 200 && backendData.detail) {
             const newAccessToken = backendData.detail.accessToken;
             const newRefreshToken = backendData.detail.refreshToken;
 
-            // Cập nhật cả access token và refresh token
+            // Cập nhật tokens
             const authStore = useAuthStore.getState();
             authStore.updateTokens(newAccessToken, newRefreshToken);
 
@@ -64,7 +63,7 @@ api.interceptors.response.use(
             originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
             return api(originalRequest);
           } else {
-            throw new Error('Invalid refresh response');
+            throw new Error('Invalid refresh response format');
           }
         } catch (refreshError) {
           // Refresh failed, logout user
@@ -74,7 +73,7 @@ api.interceptors.response.use(
 
           authStore.logout();
 
-          // Chuyển hướng đến đúng trang login dựa vào role
+          // Redirect to appropriate login page
           if (currentUser?.role === 'admin') {
             window.location.href = '/admin/login';
           } else {
@@ -83,13 +82,13 @@ api.interceptors.response.use(
           return Promise.reject(refreshError);
         }
       } else {
-        // No refresh token, logout user (chỉ khi không phải auth request)
+        // No refresh token, logout user
         const authStore = useAuthStore.getState();
         const currentUser = authStore.user;
 
         authStore.logout();
 
-        // Chuyển hướng đến đúng trang login dựa vào role
+        // Redirect to appropriate login page
         if (currentUser?.role === 'admin') {
           window.location.href = '/admin/login';
         } else {
@@ -98,7 +97,7 @@ api.interceptors.response.use(
       }
     }
 
-    // Đối với auth requests (login/register), chỉ trả về lỗi mà không redirect
+    // For auth requests (login/register), just return error without redirect
     return Promise.reject(error);
   }
 );

@@ -38,6 +38,7 @@ import {
 } from '@mui/icons-material';
 import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import { useLogoutMutation } from '../../hooks/useApi';
 
 const drawerWidth = 280;
 
@@ -88,6 +89,20 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const location = useLocation();
   const { user, logout } = useAuthStore();
 
+  // React Query logout mutation
+  const logoutMutation = useLogoutMutation({
+    onSuccess: () => {
+      logout();
+      navigate('/');
+    },
+    onError: (error) => {
+      console.error('Logout API failed:', error);
+      // Fallback to local logout
+      logout();
+      navigate('/');
+    },
+  });
+
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
@@ -101,8 +116,15 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   };
 
   const handleLogout = () => {
-    logout();
-    navigate('/');
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (refreshToken) {
+      // Call logout API với React Query
+      logoutMutation.mutate();
+    } else {
+      // Không có refresh token, logout local
+      logout();
+      navigate('/');
+    }
     handleProfileMenuClose();
   };
 

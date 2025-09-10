@@ -5,6 +5,7 @@ import {
   type UseQueryOptions,
 } from '@tanstack/react-query';
 import api from '../services/api';
+import { AuthAPI } from '../services/authService';
 import type { AxiosResponse, AxiosError } from 'axios';
 
 // ================== AUTH API HOOKS ==================
@@ -103,7 +104,45 @@ export const useRegisterMutation = (
 export const useLogoutMutation = (options?: UseMutationOptions<void, AxiosError, void>) => {
   return useMutation({
     mutationFn: async (): Promise<void> => {
-      await api.post('/auth/logout');
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (refreshToken) {
+        await AuthAPI.logout(refreshToken);
+      }
+    },
+    ...options,
+  });
+};
+
+// Types cho Refresh Token API
+export interface RefreshTokenRequest {
+  refreshToken: string;
+}
+
+export interface RefreshTokenResponse {
+  messenger: string;
+  status: number;
+  detail: {
+    accessToken: string;
+    type: string;
+    refreshToken: string;
+  };
+  instance: string;
+}
+
+/**
+ * Hook để thực hiện refresh token
+ * Trả về mutation object để component tự xử lý onSuccess/onError
+ */
+export const useRefreshTokenMutation = (
+  options?: UseMutationOptions<RefreshTokenResponse, AxiosError, RefreshTokenRequest>
+) => {
+  return useMutation({
+    mutationFn: async (refreshData: RefreshTokenRequest): Promise<RefreshTokenResponse> => {
+      const response: AxiosResponse<RefreshTokenResponse> = await api.post(
+        '/auth/refresh',
+        refreshData
+      );
+      return response.data;
     },
     ...options,
   });

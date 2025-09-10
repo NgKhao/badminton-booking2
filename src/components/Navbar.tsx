@@ -23,6 +23,7 @@ import {
 } from '@mui/icons-material';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { useLogoutMutation } from '../hooks/useApi';
 
 interface NavbarProps {
   onOpenChat?: () => void;
@@ -33,6 +34,19 @@ export const Navbar: React.FC<NavbarProps> = () => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const location = useLocation();
 
+  // React Query logout mutation
+  const logoutMutation = useLogoutMutation({
+    onSuccess: () => {
+      // Clear auth store after successful API call
+      logout();
+    },
+    onError: (error) => {
+      console.error('Logout API failed:', error);
+      // Fallback to local logout even if API fails
+      logout();
+    },
+  });
+
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
@@ -42,7 +56,14 @@ export const Navbar: React.FC<NavbarProps> = () => {
   };
 
   const handleLogout = () => {
-    logout();
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (refreshToken) {
+      // Call logout API với React Query
+      logoutMutation.mutate();
+    } else {
+      // Không có refresh token, logout local
+      logout();
+    }
     handleClose();
   };
 

@@ -42,7 +42,7 @@ export const useAuthStore = create<AuthStore>()(
         if (tokens) {
           updates.token = tokens.accessToken;
           updates.refreshToken = tokens.refreshToken;
-          // Lưu tokens vào localStorage để sử dụng với API calls
+          // Store tokens in localStorage for API calls
           localStorage.setItem('accessToken', tokens.accessToken);
           localStorage.setItem('refreshToken', tokens.refreshToken);
         }
@@ -51,7 +51,7 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       logout: () => {
-        // Xóa tokens khỏi localStorage
+        // Clear local state only - API logout handled by React Query
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
 
