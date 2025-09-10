@@ -309,6 +309,158 @@ export const useCancelBookingMutation = (
   });
 };
 
+// ================== CUSTOMER API HOOKS ==================
+
+export interface Customer {
+  userId: number;
+  customerId: number;
+  email: string;
+  fullName: string;
+  numberPhone: string;
+  active: boolean;
+  roleName: 'CUSTOMER' | 'ADMIN';
+}
+
+export interface CustomerListResponse {
+  messenger: string;
+  status: number;
+  detail: {
+    content: Customer[];
+    pageable: {
+      pageNumber: number;
+      pageSize: number;
+      sort: {
+        empty: boolean;
+        unsorted: boolean;
+        sorted: boolean;
+      };
+      offset: number;
+      unpaged: boolean;
+      paged: boolean;
+    };
+    last: boolean;
+    totalPages: number;
+    totalElements: number;
+    size: number;
+    number: number;
+    sort: {
+      empty: boolean;
+      unsorted: boolean;
+      sorted: boolean;
+    };
+    first: boolean;
+    numberOfElements: number;
+    empty: boolean;
+  };
+  instance: string;
+}
+
+export interface CustomerDetailResponse {
+  messenger: string;
+  status: number;
+  detail: Customer;
+  instance: string;
+}
+
+/**
+ * Hook để lấy danh sách khách hàng (admin only)
+ */
+export const useCustomers = (options?: UseQueryOptions<Customer[], AxiosError>) => {
+  return useQuery({
+    queryKey: ['customers'],
+    queryFn: async (): Promise<Customer[]> => {
+      const response: AxiosResponse<CustomerListResponse> = await api.get('/admin/users');
+      return response.data.detail.content;
+    },
+    ...options,
+  });
+};
+
+/**
+ * Hook để lấy chi tiết khách hàng (admin only)
+ */
+export const useCustomer = (
+  customerId: number,
+  options?: UseQueryOptions<Customer, AxiosError>
+) => {
+  return useQuery({
+    queryKey: ['customer', customerId],
+    queryFn: async (): Promise<Customer> => {
+      const response: AxiosResponse<CustomerDetailResponse> = await api.get(`/users/${customerId}`);
+      return response.data.detail;
+    },
+    enabled: !!customerId,
+    ...options,
+  });
+};
+
+// Types for customer update
+export interface UpdateCustomerRequest {
+  fullName?: string;
+  email?: string;
+  numberPhone?: string;
+  active?: boolean;
+}
+
+export interface UpdateCustomerResponse {
+  messenger: string;
+  status: number;
+  detail: Customer;
+  instance: string;
+}
+
+export interface DeleteCustomerResponse {
+  messenger: string;
+  status: number;
+  detail: string;
+  instance: string;
+}
+
+/**
+ * Hook để cập nhật thông tin khách hàng (PUT /api/users/{id})
+ */
+export const useUpdateCustomerMutation = (
+  options?: UseMutationOptions<
+    Customer,
+    AxiosError,
+    { customerId: number; data: UpdateCustomerRequest }
+  >
+) => {
+  return useMutation({
+    mutationFn: async ({
+      customerId,
+      data,
+    }: {
+      customerId: number;
+      data: UpdateCustomerRequest;
+    }): Promise<Customer> => {
+      const response: AxiosResponse<UpdateCustomerResponse> = await api.put(
+        `/users/${customerId}`,
+        data
+      );
+      return response.data.detail;
+    },
+    ...options,
+  });
+};
+
+/**
+ * Hook để xóa khách hàng (DELETE /api/admin/users/{id})
+ */
+export const useDeleteCustomerMutation = (
+  options?: UseMutationOptions<string, AxiosError, number>
+) => {
+  return useMutation({
+    mutationFn: async (customerId: number): Promise<string> => {
+      const response: AxiosResponse<DeleteCustomerResponse> = await api.delete(
+        `/admin/users/${customerId}`
+      );
+      return response.data.detail;
+    },
+    ...options,
+  });
+};
+
 // ================== ADMIN API HOOKS ==================
 
 /**
