@@ -5,7 +5,11 @@ import {
   type UseQueryOptions,
 } from '@tanstack/react-query';
 import api from '../services/api';
-import { AuthAPI } from '../services/authService';
+import {
+  AuthAPI,
+  type RegisterRequest as AuthRegisterRequest,
+  type RegisterResponse as AuthRegisterResponse,
+} from '../services/authService';
 import type { AxiosResponse, AxiosError } from 'axios';
 
 // ================== AUTH API HOOKS ==================
@@ -84,15 +88,11 @@ export const useLoginMutation = (
  * Trả về mutation object để component tự xử lý onSuccess/onError
  */
 export const useRegisterMutation = (
-  options?: UseMutationOptions<RegisterResponse, AxiosError, RegisterRequest>
+  options?: UseMutationOptions<AuthRegisterResponse, AxiosError, AuthRegisterRequest>
 ) => {
   return useMutation({
-    mutationFn: async (registerData: RegisterRequest): Promise<RegisterResponse> => {
-      const response: AxiosResponse<RegisterResponse> = await api.post(
-        '/auth/register',
-        registerData
-      );
-      return response.data;
+    mutationFn: async (registerData: AuthRegisterRequest): Promise<AuthRegisterResponse> => {
+      return await AuthAPI.register(registerData);
     },
     ...options,
   });

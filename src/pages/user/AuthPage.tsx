@@ -14,6 +14,7 @@ import {
   Divider,
   Link,
   Alert,
+  Snackbar,
 } from '@mui/material';
 import {
   Visibility,
@@ -26,14 +27,15 @@ import {
 } from '@mui/icons-material';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import {
-  useLoginMutation,
-  useRegisterMutation,
-  type LoginRequest,
-  type RegisterRequest,
-} from '../../hooks/useApi';
+import { useLoginMutation, useRegisterMutation, type LoginRequest } from '../../hooks/useApi';
+import { type RegisterRequest } from '../../services/authService';
 import { useAuthStore } from '../../store/authStore';
 import type { User } from '../../types';
+
+interface ApiErrorResponse {
+  message: string;
+  status?: number;
+}
 
 interface LoginFormData {
   email: string;
@@ -44,7 +46,7 @@ interface RegisterFormData {
   email: string;
   password: string;
   confirmPassword: string;
-  full_name: string;
+  fullName: string;
   phone: string;
 }
 
@@ -52,6 +54,7 @@ export const AuthPage: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const navigate = useNavigate();
   const { login } = useAuthStore();
 
@@ -108,25 +111,15 @@ export const AuthPage: React.FC = () => {
     onSuccess: (data) => {
       console.log('Register response:', data);
 
-      if (data.status === 200 && data.detail.userInfo) {
-        // Map server user to app User type
-        const user = mapUserData(data.detail.userInfo);
+      if (data.status === 201) {
+        // Hiển thị thông báo thành công
+        setSuccessMessage(data.messenger);
 
-        // Nếu có token trong response thì tự động login
-        if (data.detail.token) {
-          login(user, undefined, {
-            accessToken: data.detail.token.accessToken,
-            refreshToken: data.detail.token.refreshToken,
-          });
+        // Chuyển về tab login
+        setTabValue(0);
 
-          // Chuyển hướng đến trang courts
-          navigate('/courts');
-        } else {
-          // Nếu không có token, chuyển về tab login với thông báo
-          setTabValue(0);
-          // Có thể thêm toast notification ở đây
-          console.log('Đăng ký thành công! Vui lòng đăng nhập.');
-        }
+        // Reset form
+        registerMutation.reset();
       }
     },
     onError: (error) => {
@@ -167,7 +160,7 @@ export const AuthPage: React.FC = () => {
   };
 
   const onSignupSubmit = (data: RegisterFormData) => {
-    // Loại bỏ confirmPassword và gọi API register thông qua mutation
+    // Map form data to API format
     const { confirmPassword, ...registerData } = data;
     registerMutation.mutate(registerData as RegisterRequest);
   };
@@ -199,8 +192,8 @@ export const AuthPage: React.FC = () => {
             {/* Error Display */}
             {(loginError || registerError) && (
               <Alert severity="error" sx={{ mb: 2 }}>
-                {loginError?.response?.data?.messenger ||
-                  registerError?.response?.data?.messenger ||
+                {(loginError?.response?.data as ApiErrorResponse)?.message ||
+                  (registerError?.response?.data as ApiErrorResponse)?.message ||
                   loginError?.message ||
                   registerError?.message ||
                   'Có lỗi xảy ra'}
@@ -296,15 +289,15 @@ export const AuthPage: React.FC = () => {
                       </InputAdornment>
                     ),
                   }}
-                  {...registerSignup('full_name', {
+                  {...registerSignup('fullName', {
                     required: 'Họ và tên là bắt buộc',
                     minLength: {
                       value: 2,
                       message: 'Họ và tên phải có ít nhất 2 ký tự',
                     },
                   })}
-                  error={!!signupErrors.full_name}
-                  helperText={signupErrors.full_name?.message}
+                  error={!!signupErrors.fullName}
+                  helperText={signupErrors.fullName?.message}
                 />
 
                 <TextField
@@ -439,6 +432,18 @@ export const AuthPage: React.FC = () => {
             </Typography>
           </CardContent>
         </Card>
+
+        {/* Success Notification */}
+        <Snackbar
+          open={!!successMessage}
+          autoHideDuration={10000}
+          onClose={() => setSuccessMessage('')}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        >
+          <Alert onClose={() => setSuccessMessage('')} severity="success" sx={{ width: '100%' }}>
+            {successMessage}
+          </Alert>
+        </Snackbar>
       </Container>
     </Box>
   );

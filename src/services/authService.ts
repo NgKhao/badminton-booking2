@@ -35,6 +35,32 @@ export interface LoginResponse {
   instance: string;
 }
 
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  fullName: string;
+  phone: string;
+}
+
+export interface RegisterResponse {
+  messenger: string;
+  status: number;
+  detail: {
+    createAt: string;
+    updateAt: string | null;
+    createBy: string | null;
+    updateBy: string | null;
+    id: number;
+    email: string;
+    passwordHash: string;
+    fullName: string;
+    roleName: string;
+    verificationToken: string | null;
+    active: boolean;
+  };
+  instance: string;
+}
+
 // Authentication API service
 export class AuthAPI {
   /**
@@ -42,6 +68,14 @@ export class AuthAPI {
    */
   static async login(credentials: LoginRequest): Promise<LoginResponse> {
     const response = await authApi.post('/auth/login', credentials);
+    return response.data;
+  }
+
+  /**
+   * Đăng ký người dùng mới
+   */
+  static async register(userData: RegisterRequest): Promise<RegisterResponse> {
+    const response = await authApi.post('/auth/register', userData);
     return response.data;
   }
 
