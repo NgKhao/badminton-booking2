@@ -50,7 +50,15 @@ import {
 } from '@mui/icons-material';
 import courtImage from '../../assets/court.jpg';
 import { useTheme } from '@mui/material/styles';
-import { useAdminCourts, type Court } from '../../hooks/useApi';
+import {
+  useAdminCourts,
+  type Court,
+  useCreateCourtMutation,
+  useUpdateCourtMutation,
+  useDeleteCourtMutation,
+  type CreateCourtRequest,
+  type UpdateCourtRequest,
+} from '../../hooks/useApi';
 
 interface CourtFormData {
   courtName: string;
@@ -67,6 +75,61 @@ export const AdminCourtsPage: React.FC = () => {
 
   // React Query hook for fetching admin courts
   const { data: courts = [], isLoading, error, refetch } = useAdminCourts();
+
+  // Mutation hooks for court management
+  const createCourtMutation = useCreateCourtMutation({
+    onSuccess: () => {
+      setSnackbar({
+        open: true,
+        message: 'Thêm sân mới thành công!',
+        severity: 'success',
+      });
+      setOpenDialog(false);
+    },
+    onError: (error) => {
+      setSnackbar({
+        open: true,
+        message: `Lỗi khi thêm sân: ${error.message}`,
+        severity: 'error',
+      });
+    },
+  });
+
+  const updateCourtMutation = useUpdateCourtMutation({
+    onSuccess: () => {
+      setSnackbar({
+        open: true,
+        message: 'Cập nhật sân thành công!',
+        severity: 'success',
+      });
+      setOpenDialog(false);
+    },
+    onError: (error) => {
+      setSnackbar({
+        open: true,
+        message: `Lỗi khi cập nhật sân: ${error.message}`,
+        severity: 'error',
+      });
+    },
+  });
+
+  const deleteCourtMutation = useDeleteCourtMutation({
+    onSuccess: () => {
+      setSnackbar({
+        open: true,
+        message: 'Xóa sân thành công!',
+        severity: 'success',
+      });
+      setOpenDeleteDialog(false);
+    },
+    onError: (error) => {
+      setSnackbar({
+        open: true,
+        message: `Lỗi khi xóa sân: ${error.message}`,
+        severity: 'error',
+      });
+    },
+  });
 
   const [filteredCourts, setFilteredCourts] = useState<Court[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -283,34 +346,39 @@ export const AdminCourtsPage: React.FC = () => {
       return;
     }
 
+    const courtData: CreateCourtRequest = {
+      courtName: formData.courtName,
+      courtType: formData.courtType,
+      hourlyRate: formData.hourlyRate,
+      description: formData.description,
+      images: formData.images,
+      isActive: formData.isActive,
+    };
+
     if (editMode && selectedCourt) {
-      // TODO: Implement API call for updating court
-      setSnackbar({
-        open: true,
-        message: 'Chức năng cập nhật sân đang được phát triển',
-        severity: 'info',
+      // Update court
+      const updateData: UpdateCourtRequest = {
+        courtName: formData.courtName,
+        courtType: formData.courtType,
+        hourlyRate: formData.hourlyRate,
+        description: formData.description,
+        images: formData.images,
+        isActive: formData.isActive,
+      };
+
+      updateCourtMutation.mutate({
+        courtId: selectedCourt.id,
+        data: updateData,
       });
     } else {
-      // TODO: Implement API call for creating court
-      setSnackbar({
-        open: true,
-        message: 'Chức năng thêm sân mới đang được phát triển',
-        severity: 'info',
-      });
+      // Create new court
+      createCourtMutation.mutate(courtData);
     }
-
-    setOpenDialog(false);
   };
 
   const confirmDelete = () => {
     if (selectedCourt) {
-      // TODO: Implement API call for deleting court
-      setSnackbar({
-        open: true,
-        message: 'Chức năng xóa sân đang được phát triển',
-        severity: 'info',
-      });
-      setOpenDeleteDialog(false);
+      deleteCourtMutation.mutate(selectedCourt.id);
     }
   };
 
@@ -805,8 +873,17 @@ export const AdminCourtsPage: React.FC = () => {
           <Button onClick={() => setOpenDialog(false)} startIcon={<Cancel />}>
             Hủy
           </Button>
-          <Button variant="contained" onClick={handleSave} startIcon={<Save />}>
-            {editMode ? 'Cập nhật' : 'Thêm mới'}
+          <Button
+            variant="contained"
+            onClick={handleSave}
+            startIcon={<Save />}
+            disabled={createCourtMutation.isPending || updateCourtMutation.isPending}
+          >
+            {createCourtMutation.isPending || updateCourtMutation.isPending
+              ? 'Đang lưu...'
+              : editMode
+                ? 'Cập nhật'
+                : 'Thêm mới'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -946,8 +1023,13 @@ export const AdminCourtsPage: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenDeleteDialog(false)}>Hủy</Button>
-          <Button variant="contained" color="error" onClick={confirmDelete}>
-            Xóa
+          <Button
+            variant="contained"
+            color="error"
+            onClick={confirmDelete}
+            disabled={deleteCourtMutation.isPending}
+          >
+            {deleteCourtMutation.isPending ? 'Đang xóa...' : 'Xóa'}
           </Button>
         </DialogActions>
       </Dialog>

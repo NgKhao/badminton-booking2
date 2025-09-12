@@ -1,6 +1,7 @@
 import {
   useMutation,
   useQuery,
+  useQueryClient,
   type UseMutationOptions,
   type UseQueryOptions,
 } from '@tanstack/react-query';
@@ -248,7 +249,7 @@ export const useCourts = (options?: UseQueryOptions<Court[], AxiosError>) => {
  */
 export const useAdminCourts = (options?: UseQueryOptions<Court[], AxiosError>) => {
   return useQuery({
-    queryKey: ['adminCourts'],
+    queryKey: ['admin-courts'],
     queryFn: async (): Promise<Court[]> => {
       const response: AxiosResponse<CourtsResponse> = await api.get('/admin/courts');
       return response.data.detail.content;
@@ -268,6 +269,109 @@ export const useCourt = (courtId: number, options?: UseQueryOptions<Court, Axios
       return response.data.detail;
     },
     enabled: !!courtId,
+    ...options,
+  });
+};
+
+// Court management API types
+export interface CreateCourtRequest {
+  courtName: string;
+  courtType: 'INDOOR' | 'OUTDOOR';
+  hourlyRate: number;
+  description?: string;
+  images?: string[];
+  isActive: boolean;
+}
+
+export interface CreateCourtResponse {
+  messenger: string;
+  status: number;
+  detail: Court;
+  instance: string;
+}
+
+export interface UpdateCourtRequest {
+  courtName?: string;
+  courtType?: 'INDOOR' | 'OUTDOOR';
+  hourlyRate?: number;
+  description?: string;
+  images?: string[];
+  isActive?: boolean;
+}
+
+export interface UpdateCourtResponse {
+  messenger: string;
+  status: number;
+  detail: Court;
+  instance: string;
+}
+
+export interface DeleteCourtResponse {
+  messenger: string;
+  status: number;
+  detail: null;
+  instance: string;
+}
+
+/**
+ * Hook để tạo court mới (admin only)
+ */
+export const useCreateCourtMutation = (
+  options?: UseMutationOptions<Court, AxiosError, CreateCourtRequest>
+) => {
+  const queryClient = useQueryClient();
+
+  return useMutation<Court, AxiosError, CreateCourtRequest>({
+    mutationFn: async (courtData) => {
+      const response = await api.post<CreateCourtResponse>('/admin/courts', courtData);
+      return response.data.detail;
+    },
+    onSuccess: () => {
+      // Invalidate both admin and user courts queries
+      queryClient.invalidateQueries({ queryKey: ['admin-courts'] });
+      queryClient.invalidateQueries({ queryKey: ['courts'] });
+    },
+    ...options,
+  });
+};
+
+/**
+ * Hook để cập nhật court (admin only)
+ */
+export const useUpdateCourtMutation = (
+  options?: UseMutationOptions<Court, AxiosError, { courtId: number; data: UpdateCourtRequest }>
+) => {
+  const queryClient = useQueryClient();
+
+  return useMutation<Court, AxiosError, { courtId: number; data: UpdateCourtRequest }>({
+    mutationFn: async ({ courtId, data }) => {
+      const response = await api.patch<UpdateCourtResponse>(`/admin/courts/${courtId}`, data);
+      return response.data.detail;
+    },
+    onSuccess: () => {
+      // Invalidate both admin and user courts queries
+      queryClient.invalidateQueries({ queryKey: ['admin-courts'] });
+      queryClient.invalidateQueries({ queryKey: ['courts'] });
+    },
+    ...options,
+  });
+};
+
+/**
+ * Hook để xóa court (admin only)
+ */
+export const useDeleteCourtMutation = (options?: UseMutationOptions<void, AxiosError, number>) => {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, AxiosError, number>({
+    mutationFn: async (courtId) => {
+      await api.delete<DeleteCourtResponse>(`/admin/courts/${courtId}`);
+    },
+    onSuccess: () => {
+      // Invalidate both admin and user courts queries
+      queryClient.invalidateQueries({ queryKey: ['admin-courts'] });
+      queryClient.invalidateQueries({ queryKey: ['courts'] });
+    },
     ...options,
   });
 };
@@ -506,51 +610,6 @@ export const useAllBookings = (options?: UseQueryOptions<Booking[], AxiosError>)
     queryKey: ['allBookings'],
     queryFn: async (): Promise<Booking[]> => {
       const response: AxiosResponse<{ detail: Booking[] }> = await api.get('/admin/bookings');
-      return response.data.detail;
-    },
-    ...options,
-  });
-};
-
-/**
- * Hook để tạo court mới (admin only)
- */
-export const useCreateCourtMutation = (
-  options?: UseMutationOptions<
-    Court,
-    AxiosError,
-    Omit<Court, 'court_id' | 'created_at' | 'updated_at'>
-  >
-) => {
-  return useMutation({
-    mutationFn: async (
-      courtData: Omit<Court, 'court_id' | 'created_at' | 'updated_at'>
-    ): Promise<Court> => {
-      const response: AxiosResponse<{ detail: Court }> = await api.post('/admin/courts', courtData);
-      return response.data.detail;
-    },
-    ...options,
-  });
-};
-
-/**
- * Hook để cập nhật court (admin only)
- */
-export const useUpdateCourtMutation = (
-  options?: UseMutationOptions<Court, AxiosError, { courtId: number; data: Partial<Court> }>
-) => {
-  return useMutation({
-    mutationFn: async ({
-      courtId,
-      data,
-    }: {
-      courtId: number;
-      data: Partial<Court>;
-    }): Promise<Court> => {
-      const response: AxiosResponse<{ detail: Court }> = await api.put(
-        `/admin/courts/${courtId}`,
-        data
-      );
       return response.data.detail;
     },
     ...options,
