@@ -196,27 +196,62 @@ export const useUpdateProfileMutation = (
 // ================== COURT API HOOKS ==================
 
 export interface Court {
-  court_id: number;
-  court_name: string;
-  court_type: 'Trong nhà' | 'Ngoài trời';
-  status: 'available' | 'maintenance' | 'unavailable';
-  hourly_rate: number;
+  id: number;
+  courtName: string;
+  courtType: 'INDOOR' | 'OUTDOOR';
+  hourlyRate: number;
   description?: string;
   images?: string[];
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  isActive: boolean;
+  status: 'AVAILABLE' | 'MAINTENANCE' | 'UNAVAILABLE';
+}
+
+// API Response types for courts
+export interface CourtsResponse {
+  messenger: string;
+  status: number;
+  detail: {
+    content: Court[];
+    pageNumber: number;
+    pageSize: number;
+    totalElements: number;
+    totalPages: number;
+    first: boolean;
+    last: boolean;
+  };
+  instance: string;
+}
+
+export interface CourtDetailResponse {
+  messenger: string;
+  status: number;
+  detail: Court;
+  instance: string;
 }
 
 /**
- * Hook để lấy danh sách courts
+ * Hook để lấy danh sách courts (user - chỉ active courts)
  */
 export const useCourts = (options?: UseQueryOptions<Court[], AxiosError>) => {
   return useQuery({
     queryKey: ['courts'],
     queryFn: async (): Promise<Court[]> => {
-      const response: AxiosResponse<{ detail: Court[] }> = await api.get('/courts');
-      return response.data.detail;
+      const response: AxiosResponse<CourtsResponse> = await api.get('/courts');
+      return response.data.detail.content;
+    },
+    ...options,
+  });
+};
+
+/**
+ * Hook để lấy danh sách tất cả courts (admin - bao gồm cả inactive courts)
+ */
+export const useAdminCourts = (options?: UseQueryOptions<Court[], AxiosError>) => {
+  return useQuery({
+    queryKey: ['adminCourts'],
+    queryFn: async (): Promise<Court[]> => {
+      const response: AxiosResponse<CourtsResponse> = await api.get('/admin/courts');
+      return response.data.detail.content;
     },
     ...options,
   });
@@ -229,7 +264,7 @@ export const useCourt = (courtId: number, options?: UseQueryOptions<Court, Axios
   return useQuery({
     queryKey: ['court', courtId],
     queryFn: async (): Promise<Court> => {
-      const response: AxiosResponse<{ detail: Court }> = await api.get(`/courts/${courtId}`);
+      const response: AxiosResponse<CourtDetailResponse> = await api.get(`/courts/${courtId}`);
       return response.data.detail;
     },
     enabled: !!courtId,
@@ -369,7 +404,7 @@ export const useCustomers = (options?: UseQueryOptions<Customer[], AxiosError>) 
   return useQuery({
     queryKey: ['customers'],
     queryFn: async (): Promise<Customer[]> => {
-      const response: AxiosResponse<CustomerListResponse> = await api.get('/admin/users');
+      const response: AxiosResponse<CustomerListResponse> = await api.get('/admin/all/users');
       return response.data.detail.content;
     },
     ...options,

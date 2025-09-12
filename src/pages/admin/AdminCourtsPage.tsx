@@ -29,6 +29,7 @@ import {
   InputAdornment,
   Alert,
   Snackbar,
+  CircularProgress,
 } from '@mui/material';
 import {
   Add,
@@ -49,87 +50,25 @@ import {
 } from '@mui/icons-material';
 import courtImage from '../../assets/court.jpg';
 import { useTheme } from '@mui/material/styles';
-
-// Types based on database schema
-interface Court {
-  court_id: number;
-  court_name: string;
-  court_type: 'Trong nhà' | 'Ngoài trời';
-  status: 'available' | 'maintenance' | 'unavailable';
-  hourly_rate: number;
-  description: string;
-  images: string[];
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
+import { useAdminCourts, type Court } from '../../hooks/useApi';
 
 interface CourtFormData {
-  court_name: string;
-  court_type: 'Trong nhà' | 'Ngoài trời';
-  status: 'available' | 'maintenance' | 'unavailable';
-  hourly_rate: number;
+  courtName: string;
+  courtType: 'INDOOR' | 'OUTDOOR';
+  status: 'AVAILABLE' | 'MAINTENANCE' | 'UNAVAILABLE';
+  hourlyRate: number;
   description: string;
   images: string[];
-  is_active: boolean;
+  isActive: boolean;
 }
-
-// Mock data
-const mockCourts: Court[] = [
-  {
-    court_id: 1,
-    court_name: 'Sân VIP 1',
-    court_type: 'Trong nhà',
-    status: 'available',
-    hourly_rate: 150000,
-    description: 'Sân cầu lông VIP với điều hòa và ánh sáng LED chuyên nghiệp',
-    images: [courtImage],
-    is_active: true,
-    created_at: '2025-01-01T00:00:00Z',
-    updated_at: '2025-01-01T00:00:00Z',
-  },
-  {
-    court_id: 2,
-    court_name: 'Sân Standard 1',
-    court_type: 'Trong nhà',
-    status: 'available',
-    hourly_rate: 120000,
-    description: 'Sân cầu lông tiêu chuẩn với trang thiết bị đầy đủ',
-    images: [courtImage],
-    is_active: true,
-    created_at: '2025-01-01T00:00:00Z',
-    updated_at: '2025-01-01T00:00:00Z',
-  },
-  {
-    court_id: 3,
-    court_name: 'Sân Ngoài trời A',
-    court_type: 'Ngoài trời',
-    status: 'maintenance',
-    hourly_rate: 100000,
-    description: 'Sân ngoài trời rộng rãi với view thiên nhiên đẹp',
-    images: [courtImage],
-    is_active: true,
-    created_at: '2025-01-01T00:00:00Z',
-    updated_at: '2025-01-01T00:00:00Z',
-  },
-  {
-    court_id: 4,
-    court_name: 'Sân Ngoài trời B',
-    court_type: 'Ngoài trời',
-    status: 'unavailable',
-    hourly_rate: 100000,
-    description: 'Sân ngoài trời với không gian thoáng đãng',
-    images: [courtImage],
-    is_active: false,
-    created_at: '2025-01-01T00:00:00Z',
-    updated_at: '2025-01-01T00:00:00Z',
-  },
-];
 
 export const AdminCourtsPage: React.FC = () => {
   const theme = useTheme();
-  const [courts, setCourts] = useState<Court[]>(mockCourts);
-  const [filteredCourts, setFilteredCourts] = useState<Court[]>(mockCourts);
+
+  // React Query hook for fetching admin courts
+  const { data: courts = [], isLoading, error, refetch } = useAdminCourts();
+
+  const [filteredCourts, setFilteredCourts] = useState<Court[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
@@ -143,13 +82,13 @@ export const AdminCourtsPage: React.FC = () => {
 
   // Form state
   const [formData, setFormData] = useState<CourtFormData>({
-    court_name: '',
-    court_type: 'Trong nhà',
-    status: 'available',
-    hourly_rate: 0,
+    courtName: '',
+    courtType: 'INDOOR',
+    status: 'AVAILABLE',
+    hourlyRate: 0,
     description: '',
     images: [],
-    is_active: true,
+    isActive: true,
   });
 
   // Image upload state
@@ -170,8 +109,8 @@ export const AdminCourtsPage: React.FC = () => {
     if (searchTerm) {
       filtered = filtered.filter(
         (court) =>
-          court.court_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          court.description.toLowerCase().includes(searchTerm.toLowerCase())
+          court.courtName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (court.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
       );
     }
 
@@ -180,7 +119,7 @@ export const AdminCourtsPage: React.FC = () => {
     }
 
     if (filterType !== 'all') {
-      filtered = filtered.filter((court) => court.court_type === filterType);
+      filtered = filtered.filter((court) => court.courtType === filterType);
     }
 
     setFilteredCourts(filtered);
@@ -189,11 +128,11 @@ export const AdminCourtsPage: React.FC = () => {
   // Helper functions
   const getStatusColor = (status: string): 'success' | 'warning' | 'error' | 'default' => {
     switch (status) {
-      case 'available':
+      case 'AVAILABLE':
         return 'success';
-      case 'maintenance':
+      case 'MAINTENANCE':
         return 'warning';
-      case 'unavailable':
+      case 'UNAVAILABLE':
         return 'error';
       default:
         return 'default';
@@ -202,19 +141,30 @@ export const AdminCourtsPage: React.FC = () => {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'available':
+      case 'AVAILABLE':
         return 'Có sẵn';
-      case 'maintenance':
+      case 'MAINTENANCE':
         return 'Bảo trì';
-      case 'unavailable':
+      case 'UNAVAILABLE':
         return 'Không khả dụng';
       default:
         return status;
     }
   };
 
+  const getTypeText = (type: string) => {
+    switch (type) {
+      case 'INDOOR':
+        return 'Trong nhà';
+      case 'OUTDOOR':
+        return 'Ngoài trời';
+      default:
+        return type;
+    }
+  };
+
   const getCourtTypeIcon = (type: string) => {
-    return type === 'Trong nhà' ? <AcUnit /> : <WbSunny />;
+    return type === 'INDOOR' ? <AcUnit /> : <WbSunny />;
   };
 
   const formatCurrency = (amount: number) => {
@@ -277,13 +227,13 @@ export const AdminCourtsPage: React.FC = () => {
   const handleAdd = () => {
     setEditMode(false);
     setFormData({
-      court_name: '',
-      court_type: 'Trong nhà',
-      status: 'available',
-      hourly_rate: 0,
+      courtName: '',
+      courtType: 'INDOOR',
+      status: 'AVAILABLE',
+      hourlyRate: 0,
       description: '',
       images: [],
-      is_active: true,
+      isActive: true,
     });
     setSelectedFile(null);
     setImagePreview('');
@@ -294,17 +244,17 @@ export const AdminCourtsPage: React.FC = () => {
     setEditMode(true);
     setSelectedCourt(court);
     setFormData({
-      court_name: court.court_name,
-      court_type: court.court_type,
+      courtName: court.courtName,
+      courtType: court.courtType,
       status: court.status,
-      hourly_rate: court.hourly_rate,
-      description: court.description,
-      images: court.images,
-      is_active: court.is_active,
+      hourlyRate: court.hourlyRate,
+      description: court.description ?? '',
+      images: court.images ?? [],
+      isActive: court.isActive,
     });
 
     // Set preview for existing image
-    if (court.images.length > 0) {
+    if (court.images && court.images.length > 0) {
       setImagePreview(court.images[0]);
     } else {
       setImagePreview('');
@@ -324,7 +274,7 @@ export const AdminCourtsPage: React.FC = () => {
   };
 
   const handleSave = () => {
-    if (!formData.court_name || !formData.hourly_rate) {
+    if (!formData.courtName || !formData.hourlyRate) {
       setSnackbar({
         open: true,
         message: 'Vui lòng điền đầy đủ thông tin bắt buộc',
@@ -334,33 +284,18 @@ export const AdminCourtsPage: React.FC = () => {
     }
 
     if (editMode && selectedCourt) {
-      // Update court
-      const updatedCourt: Court = {
-        ...selectedCourt,
-        ...formData,
-        updated_at: new Date().toISOString(),
-      };
-      setCourts(
-        courts.map((court) => (court.court_id === selectedCourt.court_id ? updatedCourt : court))
-      );
+      // TODO: Implement API call for updating court
       setSnackbar({
         open: true,
-        message: 'Cập nhật sân thành công!',
-        severity: 'success',
+        message: 'Chức năng cập nhật sân đang được phát triển',
+        severity: 'info',
       });
     } else {
-      // Add new court
-      const newCourt: Court = {
-        court_id: Math.max(...courts.map((c) => c.court_id)) + 1,
-        ...formData,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      setCourts([...courts, newCourt]);
+      // TODO: Implement API call for creating court
       setSnackbar({
         open: true,
-        message: 'Thêm sân mới thành công!',
-        severity: 'success',
+        message: 'Chức năng thêm sân mới đang được phát triển',
+        severity: 'info',
       });
     }
 
@@ -369,32 +304,49 @@ export const AdminCourtsPage: React.FC = () => {
 
   const confirmDelete = () => {
     if (selectedCourt) {
-      setCourts(courts.filter((court) => court.court_id !== selectedCourt.court_id));
+      // TODO: Implement API call for deleting court
       setSnackbar({
         open: true,
-        message: 'Xóa sân thành công!',
-        severity: 'success',
+        message: 'Chức năng xóa sân đang được phát triển',
+        severity: 'info',
       });
       setOpenDeleteDialog(false);
     }
   };
 
-  const toggleCourtStatus = (court: Court) => {
-    const updatedCourt = {
-      ...court,
-      is_active: !court.is_active,
-      updated_at: new Date().toISOString(),
-    };
-    setCourts(courts.map((c) => (c.court_id === court.court_id ? updatedCourt : c)));
+  const toggleCourtStatus = (_court: Court) => {
+    // TODO: Implement API call for toggling court status
     setSnackbar({
       open: true,
-      message: `${court.is_active ? 'Vô hiệu hóa' : 'Kích hoạt'} sân thành công!`,
-      severity: 'success',
+      message: 'Chức năng thay đổi trạng thái sân đang được phát triển',
+      severity: 'info',
     });
   };
 
   return (
     <Box>
+      {/* Loading State */}
+      {isLoading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+          <CircularProgress />
+        </Box>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <Alert
+          severity="error"
+          sx={{ mb: 3 }}
+          action={
+            <Button color="inherit" size="small" onClick={() => refetch()}>
+              Thử lại
+            </Button>
+          }
+        >
+          Có lỗi xảy ra khi tải dữ liệu: {error instanceof Error ? error.message : 'Unknown error'}
+        </Alert>
+      )}
+
       {/* Page Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'text.primary', mb: 1 }}>
@@ -440,7 +392,7 @@ export const AdminCourtsPage: React.FC = () => {
                   Sân hoạt động
                 </Typography>
                 <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'success.main' }}>
-                  {courts.filter((c) => c.status === 'available').length}
+                  {courts.filter((c) => c.status === 'AVAILABLE').length}
                 </Typography>
               </Box>
               <Avatar sx={{ bgcolor: theme.palette.success.main }}>
@@ -458,7 +410,7 @@ export const AdminCourtsPage: React.FC = () => {
                   Đang bảo trì
                 </Typography>
                 <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'warning.main' }}>
-                  {courts.filter((c) => c.status === 'maintenance').length}
+                  {courts.filter((c) => c.status === 'MAINTENANCE').length}
                 </Typography>
               </Box>
               <Avatar sx={{ bgcolor: theme.palette.warning.main }}>
@@ -476,7 +428,7 @@ export const AdminCourtsPage: React.FC = () => {
                   Doanh thu/giờ
                 </Typography>
                 <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'info.main' }}>
-                  {formatCurrency(courts.reduce((sum, c) => sum + c.hourly_rate, 0)).slice(0, -1)}
+                  {formatCurrency(courts.reduce((sum, c) => sum + c.hourlyRate, 0)).slice(0, -1)}
                 </Typography>
               </Box>
               <Avatar sx={{ bgcolor: theme.palette.info.main }}>
@@ -514,9 +466,9 @@ export const AdminCourtsPage: React.FC = () => {
                 onChange={(e) => setFilterStatus(e.target.value)}
               >
                 <MenuItem value="all">Tất cả</MenuItem>
-                <MenuItem value="available">Có sẵn</MenuItem>
-                <MenuItem value="maintenance">Bảo trì</MenuItem>
-                <MenuItem value="unavailable">Không khả dụng</MenuItem>
+                <MenuItem value="AVAILABLE">Có sẵn</MenuItem>
+                <MenuItem value="MAINTENANCE">Bảo trì</MenuItem>
+                <MenuItem value="UNAVAILABLE">Không khả dụng</MenuItem>
               </Select>
             </FormControl>
 
@@ -528,8 +480,8 @@ export const AdminCourtsPage: React.FC = () => {
                 onChange={(e) => setFilterType(e.target.value)}
               >
                 <MenuItem value="all">Tất cả</MenuItem>
-                <MenuItem value="Trong nhà">Trong nhà</MenuItem>
-                <MenuItem value="Ngoài trời">Ngoài trời</MenuItem>
+                <MenuItem value="INDOOR">Trong nhà</MenuItem>
+                <MenuItem value="OUTDOOR">Ngoài trời</MenuItem>
               </Select>
             </FormControl>
 
@@ -572,7 +524,7 @@ export const AdminCourtsPage: React.FC = () => {
             </TableHead>
             <TableBody>
               {filteredCourts.map((court) => (
-                <TableRow key={court.court_id} hover>
+                <TableRow key={court.id} hover>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                       <Avatar
@@ -583,24 +535,24 @@ export const AdminCourtsPage: React.FC = () => {
                           fontSize: '0.875rem',
                         }}
                       >
-                        {court.court_name.charAt(0)}
+                        {court.courtName.charAt(0)}
                       </Avatar>
                       <Box>
                         <Typography variant="body2" sx={{ fontWeight: 'medium', lineHeight: 1.2 }}>
-                          {court.court_name}
+                          {court.courtName}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          ID: {court.court_id}
+                          ID: {court.id}
                         </Typography>
                       </Box>
                     </Box>
                   </TableCell>
                   <TableCell>
-                    {court.images.length > 0 ? (
+                    {court.images && court.images.length > 0 ? (
                       <Box
                         component="img"
                         src={court.images[0] || courtImage}
-                        alt={court.court_name}
+                        alt={court.courtName}
                         sx={{
                           width: 60,
                           height: 40,
@@ -614,7 +566,7 @@ export const AdminCourtsPage: React.FC = () => {
                       <Box
                         component="img"
                         src={courtImage}
-                        alt={court.court_name}
+                        alt={court.courtName}
                         sx={{
                           width: 60,
                           height: 40,
@@ -628,8 +580,8 @@ export const AdminCourtsPage: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      {getCourtTypeIcon(court.court_type)}
-                      <Typography variant="body2">{court.court_type}</Typography>
+                      {getCourtTypeIcon(court.courtType)}
+                      <Typography variant="body2">{getTypeText(court.courtType)}</Typography>
                     </Box>
                   </TableCell>
                   <TableCell>
@@ -642,7 +594,7 @@ export const AdminCourtsPage: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                      {formatCurrency(court.hourly_rate)}
+                      {formatCurrency(court.hourlyRate)}
                     </Typography>
                   </TableCell>
                   <TableCell>
@@ -660,7 +612,7 @@ export const AdminCourtsPage: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <Switch
-                      checked={court.is_active}
+                      checked={court.isActive}
                       onChange={() => toggleCourtStatus(court)}
                       size="small"
                     />
@@ -701,25 +653,25 @@ export const AdminCourtsPage: React.FC = () => {
             >
               <TextField
                 label="Tên sân"
-                value={formData.court_name}
-                onChange={(e) => setFormData({ ...formData, court_name: e.target.value })}
+                value={formData.courtName}
+                onChange={(e) => setFormData({ ...formData, courtName: e.target.value })}
                 fullWidth
                 required
               />
               <FormControl fullWidth required>
                 <InputLabel>Loại sân</InputLabel>
                 <Select
-                  value={formData.court_type}
+                  value={formData.courtType}
                   label="Loại sân"
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      court_type: e.target.value as 'Trong nhà' | 'Ngoài trời',
+                      courtType: e.target.value as 'INDOOR' | 'OUTDOOR',
                     })
                   }
                 >
-                  <MenuItem value="Trong nhà">Trong nhà</MenuItem>
-                  <MenuItem value="Ngoài trời">Ngoài trời</MenuItem>
+                  <MenuItem value="INDOOR">Trong nhà</MenuItem>
+                  <MenuItem value="OUTDOOR">Ngoài trời</MenuItem>
                 </Select>
               </FormControl>
             </Box>
@@ -734,20 +686,20 @@ export const AdminCourtsPage: React.FC = () => {
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      status: e.target.value as 'available' | 'maintenance' | 'unavailable',
+                      status: e.target.value as 'AVAILABLE' | 'MAINTENANCE' | 'UNAVAILABLE',
                     })
                   }
                 >
-                  <MenuItem value="available">Có sẵn</MenuItem>
-                  <MenuItem value="maintenance">Bảo trì</MenuItem>
-                  <MenuItem value="unavailable">Không khả dụng</MenuItem>
+                  <MenuItem value="AVAILABLE">Có sẵn</MenuItem>
+                  <MenuItem value="MAINTENANCE">Bảo trì</MenuItem>
+                  <MenuItem value="UNAVAILABLE">Không khả dụng</MenuItem>
                 </Select>
               </FormControl>
               <TextField
                 label="Giá thuê (VNĐ/giờ)"
                 type="number"
-                value={formData.hourly_rate}
-                onChange={(e) => setFormData({ ...formData, hourly_rate: Number(e.target.value) })}
+                value={formData.hourlyRate}
+                onChange={(e) => setFormData({ ...formData, hourlyRate: Number(e.target.value) })}
                 fullWidth
                 required
               />
@@ -841,8 +793,8 @@ export const AdminCourtsPage: React.FC = () => {
             <FormControlLabel
               control={
                 <Switch
-                  checked={formData.is_active}
-                  onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                  checked={formData.isActive}
+                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
                 />
               }
               label="Kích hoạt sân"
@@ -869,10 +821,10 @@ export const AdminCourtsPage: React.FC = () => {
         <DialogTitle>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Avatar sx={{ bgcolor: theme.palette.primary.main }}>
-              {selectedCourt?.court_name.charAt(0)}
+              {selectedCourt?.courtName.charAt(0)}
             </Avatar>
             <Box>
-              <Typography variant="h6">{selectedCourt?.court_name}</Typography>
+              <Typography variant="h6">{selectedCourt?.courtName}</Typography>
               <Typography variant="body2" color="text.secondary">
                 Chi tiết thông tin sân
               </Typography>
@@ -887,8 +839,8 @@ export const AdminCourtsPage: React.FC = () => {
                   Loại sân
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  {getCourtTypeIcon(selectedCourt.court_type)}
-                  <Typography variant="body1">{selectedCourt.court_type}</Typography>
+                  {getCourtTypeIcon(selectedCourt.courtType)}
+                  <Typography variant="body1">{getTypeText(selectedCourt.courtType)}</Typography>
                 </Box>
               </Box>
               <Box>
@@ -906,18 +858,18 @@ export const AdminCourtsPage: React.FC = () => {
                   Giá thuê
                 </Typography>
                 <Typography variant="h6" color="primary">
-                  {formatCurrency(selectedCourt.hourly_rate)}
+                  {formatCurrency(selectedCourt.hourlyRate)}
                 </Typography>
               </Box>
               <Box>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                   Hình ảnh sân
                 </Typography>
-                {selectedCourt.images.length > 0 ? (
+                {selectedCourt.images && selectedCourt.images.length > 0 ? (
                   <Box
                     component="img"
                     src={selectedCourt.images[0] || courtImage}
-                    alt={selectedCourt.court_name}
+                    alt={selectedCourt.courtName}
                     sx={{
                       width: 200,
                       height: 120,
@@ -931,7 +883,7 @@ export const AdminCourtsPage: React.FC = () => {
                   <Box
                     component="img"
                     src={courtImage}
-                    alt={selectedCourt.court_name}
+                    alt={selectedCourt.courtName}
                     sx={{
                       width: 200,
                       height: 120,
@@ -954,9 +906,9 @@ export const AdminCourtsPage: React.FC = () => {
                   Trạng thái hoạt động
                 </Typography>
                 <Chip
-                  label={selectedCourt.is_active ? 'Đang hoạt động' : 'Tạm ngưng'}
+                  label={selectedCourt.isActive ? 'Đang hoạt động' : 'Tạm ngưng'}
                   size="small"
-                  color={selectedCourt.is_active ? 'success' : 'error'}
+                  color={selectedCourt.isActive ? 'success' : 'error'}
                 />
               </Box>
             </Box>
@@ -987,7 +939,7 @@ export const AdminCourtsPage: React.FC = () => {
       >
         <DialogTitle>Xác nhận xóa</DialogTitle>
         <DialogContent>
-          <Typography>Bạn có chắc chắn muốn xóa sân "{selectedCourt?.court_name}"?</Typography>
+          <Typography>Bạn có chắc chắn muốn xóa sân "{selectedCourt?.courtName}"?</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
             Hành động này không thể hoàn tác.
           </Typography>

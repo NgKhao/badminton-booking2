@@ -26,16 +26,14 @@ export interface Customer {
 
 // Court types
 export interface Court {
-  court_id: number;
-  court_name: string;
-  court_type: 'Trong nhà' | 'Ngoài trời';
-  status: CourtStatus;
-  hourly_rate: number;
+  id: number;
+  courtName: string;
+  courtType: 'INDOOR' | 'OUTDOOR';
+  hourlyRate: number;
   description?: string;
   images?: string[];
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  isActive: boolean;
+  status: 'AVAILABLE' | 'MAINTENANCE' | 'UNAVAILABLE';
 }
 
 // Booking types
