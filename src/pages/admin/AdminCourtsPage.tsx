@@ -85,6 +85,7 @@ export const AdminCourtsPage: React.FC = () => {
         severity: 'success',
       });
       setOpenDialog(false);
+      refetch(); // Thêm dòng này
     },
     onError: (error) => {
       setSnackbar({
@@ -103,6 +104,7 @@ export const AdminCourtsPage: React.FC = () => {
         severity: 'success',
       });
       setOpenDialog(false);
+      refetch(); // Thêm dòng này
     },
     onError: (error) => {
       setSnackbar({
@@ -121,6 +123,7 @@ export const AdminCourtsPage: React.FC = () => {
         severity: 'success',
       });
       setOpenDeleteDialog(false);
+      refetch(); // Thêm dòng này
     },
     onError: (error) => {
       setSnackbar({
