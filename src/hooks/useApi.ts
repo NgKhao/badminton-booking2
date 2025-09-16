@@ -273,10 +273,10 @@ export const useAdminCourts = (
       const queryParams = new URLSearchParams();
       if (params?.page !== undefined) queryParams.append('page', params.page.toString());
       if (params?.size !== undefined) queryParams.append('size', params.size.toString());
-      
+
       const url = `/admin/courts${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       const response: AxiosResponse<CourtsResponse> = await api.get(url);
-      
+
       return {
         courts: response.data.detail.content.sort((a, b) => b.id - a.id), // Sort by ID descending (newest first)
         pagination: {
@@ -583,10 +583,10 @@ export const useCustomers = (
       const queryParams = new URLSearchParams();
       if (params?.page !== undefined) queryParams.append('page', params.page.toString());
       if (params?.size !== undefined) queryParams.append('size', params.size.toString());
-      
+
       const url = `/admin/all/users${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       const response: AxiosResponse<CustomerListResponse> = await api.get(url);
-      
+
       return {
         customers: response.data.detail.content.sort((a, b) => b.userId - a.userId), // Sort by userId descending (newest first)
         pagination: {

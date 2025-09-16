@@ -427,7 +427,7 @@ export const AdminBookingsPage: React.FC = () => {
         booking_date: format(start, 'yyyy-MM-dd'),
         start_time: format(start, 'HH:mm'),
         end_time: format(end, 'HH:mm'),
-        status: 'pending',
+        status: 'confirmed',
         customer_name: '',
         customer_phone: '',
         customer_email: '',
@@ -758,7 +758,7 @@ export const AdminBookingsPage: React.FC = () => {
                   booking_date: format(new Date(), 'yyyy-MM-dd'),
                   start_time: '08:00',
                   end_time: '10:00',
-                  status: 'pending',
+                  status: 'confirmed',
                   customer_name: '',
                   customer_phone: '',
                   customer_email: '',
@@ -1101,24 +1101,37 @@ export const AdminBookingsPage: React.FC = () => {
                   <FormControl fullWidth error={!!errors.status}>
                     <InputLabel>Trạng thái</InputLabel>
                     <Select {...field} label="Trạng thái">
-                      <MenuItem value="pending">
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <WarningIcon color="warning" fontSize="small" />
-                          Chờ xác nhận
-                        </Box>
-                      </MenuItem>
-                      <MenuItem value="confirmed">
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <CheckCircleIcon color="success" fontSize="small" />
-                          Đã xác nhận
-                        </Box>
-                      </MenuItem>
-                      <MenuItem value="cancelled">
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <CancelIcon color="error" fontSize="small" />
-                          Đã hủy
-                        </Box>
-                      </MenuItem>
+                      {/* Khi thêm mới: chỉ hiển thị "Đã xác nhận" */}
+                      {isAddMode ? (
+                        <MenuItem value="confirmed">
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <CheckCircleIcon color="success" fontSize="small" />
+                            Đã xác nhận
+                          </Box>
+                        </MenuItem>
+                      ) : (
+                        /* Khi chỉnh sửa: hiển thị đầy đủ 3 trạng thái */
+                        [
+                          <MenuItem key="pending" value="pending">
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <WarningIcon color="warning" fontSize="small" />
+                              Chờ xác nhận
+                            </Box>
+                          </MenuItem>,
+                          <MenuItem key="confirmed" value="confirmed">
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <CheckCircleIcon color="success" fontSize="small" />
+                              Đã xác nhận
+                            </Box>
+                          </MenuItem>,
+                          <MenuItem key="cancelled" value="cancelled">
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <CancelIcon color="error" fontSize="small" />
+                              Đã hủy
+                            </Box>
+                          </MenuItem>,
+                        ]
+                      )}
                     </Select>
                   </FormControl>
                 )}
