@@ -26,9 +26,13 @@ import {
   Alert,
   Snackbar,
   CircularProgress,
+  Pagination,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import {
-  Add,
   Edit,
   Delete,
   Visibility,
@@ -59,8 +63,23 @@ interface CustomerFormData {
 export const AdminCustomersPage: React.FC = () => {
   const theme = useTheme();
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(0);
+  const [pageSize, setPageSize] = useState(5);
+
   // React Query hooks
-  const { data: customers = [], isLoading, error, refetch } = useCustomers();
+  const {
+    data: customersData,
+    isLoading,
+    error,
+    refetch,
+  } = useCustomers({
+    page: currentPage,
+    size: pageSize,
+  });
+
+  const customers = React.useMemo(() => customersData?.customers || [], [customersData?.customers]);
+  const paginationInfo = customersData?.pagination;
 
   // Mutation hooks for update and delete
   const updateCustomerMutation = useUpdateCustomerMutation({
@@ -132,7 +151,7 @@ export const AdminCustomersPage: React.FC = () => {
 
     if (searchTerm) {
       filtered = filtered.filter(
-        (customer) =>
+        (customer: Customer) =>
           customer.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           customer.numberPhone?.includes(searchTerm)
@@ -152,17 +171,6 @@ export const AdminCustomersPage: React.FC = () => {
   };
 
   // CRUD operations - simplified for display only
-  const handleAdd = () => {
-    setEditMode(false);
-    setFormData({
-      fullName: '',
-      email: '',
-      numberPhone: '',
-      active: true,
-    });
-    setOpenDialog(true);
-  };
-
   const handleEdit = (customer: Customer) => {
     setEditMode(true);
     setSelectedCustomer(customer);
@@ -225,6 +233,16 @@ export const AdminCustomersPage: React.FC = () => {
     }
   };
 
+  // Pagination handlers
+  const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
+    setCurrentPage(value - 1); // Material UI Pagination is 1-indexed, API is 0-indexed
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(0); // Reset to first page
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -283,7 +301,7 @@ export const AdminCustomersPage: React.FC = () => {
                   Tổng khách hàng
                 </Typography>
                 <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                  {customers.length}
+                  {paginationInfo?.totalElements || customers.length}
                 </Typography>
               </Box>
               <Avatar sx={{ bgcolor: theme.palette.primary.main }}>
@@ -307,7 +325,7 @@ export const AdminCustomersPage: React.FC = () => {
                   Hoạt động
                 </Typography>
                 <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'success.main' }}>
-                  {customers.filter((c) => c.active).length}
+                  {customers.filter((c: Customer) => c.active).length}
                 </Typography>
               </Box>
               <Avatar sx={{ bgcolor: theme.palette.success.main }}>
@@ -464,6 +482,47 @@ export const AdminCustomersPage: React.FC = () => {
             </TableBody>
           </Table>
         </TableContainer>
+
+        {/* Pagination */}
+        {paginationInfo && paginationInfo.totalPages > 1 && (
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              p: 2,
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              Hiển thị {currentPage * pageSize + 1} -{' '}
+              {Math.min((currentPage + 1) * pageSize, paginationInfo.totalElements)} của{' '}
+              {paginationInfo.totalElements} khách hàng
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <FormControl size="small" sx={{ minWidth: 80 }}>
+                <InputLabel>Số/trang</InputLabel>
+                <Select
+                  value={pageSize}
+                  label="Số/trang"
+                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                >
+                  <MenuItem value={5}>5</MenuItem>
+                  <MenuItem value={10}>10</MenuItem>
+                  <MenuItem value={20}>20</MenuItem>
+                  <MenuItem value={50}>50</MenuItem>
+                </Select>
+              </FormControl>
+              <Pagination
+                count={paginationInfo.totalPages}
+                page={currentPage + 1}
+                onChange={handlePageChange}
+                color="primary"
+                showFirstButton
+                showLastButton
+              />
+            </Box>
+          </Box>
+        )}
       </Card>
 
       {/* Add/Edit Dialog */}

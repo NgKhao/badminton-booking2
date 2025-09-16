@@ -223,6 +223,22 @@ export interface CourtsResponse {
   instance: string;
 }
 
+// Pagination parameters
+export interface PaginationParams {
+  page?: number;
+  size?: number;
+}
+
+// Pagination response
+export interface PaginationInfo {
+  pageNumber: number;
+  pageSize: number;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  last: boolean;
+}
+
 export interface CourtDetailResponse {
   messenger: string;
   status: number;
@@ -247,12 +263,31 @@ export const useCourts = (options?: UseQueryOptions<Court[], AxiosError>) => {
 /**
  * Hook để lấy danh sách tất cả courts (admin - bao gồm cả inactive courts)
  */
-export const useAdminCourts = (options?: UseQueryOptions<Court[], AxiosError>) => {
+export const useAdminCourts = (
+  params?: PaginationParams,
+  options?: UseQueryOptions<{ courts: Court[]; pagination: PaginationInfo }, AxiosError>
+) => {
   return useQuery({
-    queryKey: ['admin-courts'],
-    queryFn: async (): Promise<Court[]> => {
-      const response: AxiosResponse<CourtsResponse> = await api.get('/admin/courts');
-      return response.data.detail.content;
+    queryKey: ['admin-courts', params],
+    queryFn: async (): Promise<{ courts: Court[]; pagination: PaginationInfo }> => {
+      const queryParams = new URLSearchParams();
+      if (params?.page !== undefined) queryParams.append('page', params.page.toString());
+      if (params?.size !== undefined) queryParams.append('size', params.size.toString());
+      
+      const url = `/admin/courts${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const response: AxiosResponse<CourtsResponse> = await api.get(url);
+      
+      return {
+        courts: response.data.detail.content.sort((a, b) => b.id - a.id), // Sort by ID descending (newest first)
+        pagination: {
+          pageNumber: response.data.detail.pageNumber,
+          pageSize: response.data.detail.pageSize,
+          totalElements: response.data.detail.totalElements,
+          totalPages: response.data.detail.totalPages,
+          first: response.data.detail.first,
+          last: response.data.detail.last,
+        },
+      };
     },
     ...options,
   });
@@ -538,12 +573,31 @@ export interface CustomerDetailResponse {
 /**
  * Hook để lấy danh sách khách hàng (admin only)
  */
-export const useCustomers = (options?: UseQueryOptions<Customer[], AxiosError>) => {
+export const useCustomers = (
+  params?: PaginationParams,
+  options?: UseQueryOptions<{ customers: Customer[]; pagination: PaginationInfo }, AxiosError>
+) => {
   return useQuery({
-    queryKey: ['customers'],
-    queryFn: async (): Promise<Customer[]> => {
-      const response: AxiosResponse<CustomerListResponse> = await api.get('/admin/all/users');
-      return response.data.detail.content;
+    queryKey: ['customers', params],
+    queryFn: async (): Promise<{ customers: Customer[]; pagination: PaginationInfo }> => {
+      const queryParams = new URLSearchParams();
+      if (params?.page !== undefined) queryParams.append('page', params.page.toString());
+      if (params?.size !== undefined) queryParams.append('size', params.size.toString());
+      
+      const url = `/admin/all/users${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const response: AxiosResponse<CustomerListResponse> = await api.get(url);
+      
+      return {
+        customers: response.data.detail.content.sort((a, b) => b.userId - a.userId), // Sort by userId descending (newest first)
+        pagination: {
+          pageNumber: response.data.detail.number,
+          pageSize: response.data.detail.size,
+          totalElements: response.data.detail.totalElements,
+          totalPages: response.data.detail.totalPages,
+          first: response.data.detail.first,
+          last: response.data.detail.last,
+        },
+      };
     },
     ...options,
   });

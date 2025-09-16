@@ -30,6 +30,7 @@ import {
   Alert,
   Snackbar,
   CircularProgress,
+  Pagination,
 } from '@mui/material';
 import {
   Add,
@@ -72,8 +73,23 @@ interface CourtFormData {
 export const AdminCourtsPage: React.FC = () => {
   const theme = useTheme();
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(0);
+  const [pageSize, setPageSize] = useState(5);
+
   // React Query hook for fetching admin courts
-  const { data: courts = [], isLoading, error, refetch } = useAdminCourts();
+  const {
+    data: courtsData,
+    isLoading,
+    error,
+    refetch,
+  } = useAdminCourts({
+    page: currentPage,
+    size: pageSize,
+  });
+
+  const courts = React.useMemo(() => courtsData?.courts || [], [courtsData?.courts]);
+  const paginationInfo = courtsData?.pagination;
 
   // Mutation hooks for court management
   const createCourtMutation = useCreateCourtMutation({
@@ -444,6 +460,16 @@ export const AdminCourtsPage: React.FC = () => {
     setFormData({ ...formData, isActive });
   };
 
+  // Pagination handlers
+  const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
+    setCurrentPage(value - 1); // Material UI Pagination is 1-indexed, API is 0-indexed
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(0); // Reset to first page
+  };
+
   return (
     <Box>
       {/* Loading State */}
@@ -762,6 +788,47 @@ export const AdminCourtsPage: React.FC = () => {
             </TableBody>
           </Table>
         </TableContainer>
+
+        {/* Pagination */}
+        {paginationInfo && paginationInfo.totalPages > 1 && (
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              p: 2,
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              Hiển thị {currentPage * pageSize + 1} -{' '}
+              {Math.min((currentPage + 1) * pageSize, paginationInfo.totalElements)} của{' '}
+              {paginationInfo.totalElements} sân
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <FormControl size="small" sx={{ minWidth: 80 }}>
+                <InputLabel>Số/trang</InputLabel>
+                <Select
+                  value={pageSize}
+                  label="Số/trang"
+                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                >
+                  <MenuItem value={5}>5</MenuItem>
+                  <MenuItem value={10}>10</MenuItem>
+                  <MenuItem value={20}>20</MenuItem>
+                  <MenuItem value={50}>50</MenuItem>
+                </Select>
+              </FormControl>
+              <Pagination
+                count={paginationInfo.totalPages}
+                page={currentPage + 1}
+                onChange={handlePageChange}
+                color="primary"
+                showFirstButton
+                showLastButton
+              />
+            </Box>
+          </Box>
+        )}
       </Card>
 
       {/* Add/Edit Dialog */}
