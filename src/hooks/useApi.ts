@@ -279,8 +279,11 @@ export interface CreateCourtRequest {
   courtType: 'INDOOR' | 'OUTDOOR';
   hourlyRate: number;
   description?: string;
-  images?: string[];
-  isActive: boolean;
+}
+
+export interface CreateCourtFormRequest {
+  courtDTO: CreateCourtRequest;
+  imageFile?: File;
 }
 
 export interface CreateCourtResponse {
@@ -295,8 +298,13 @@ export interface UpdateCourtRequest {
   courtType?: 'INDOOR' | 'OUTDOOR';
   hourlyRate?: number;
   description?: string;
-  images?: string[];
   isActive?: boolean;
+  status?: 'AVAILABLE' | 'MAINTENANCE' | 'UNAVAILABLE';
+}
+
+export interface UpdateCourtFormRequest {
+  courtDTO: UpdateCourtRequest;
+  imageFile?: File;
 }
 
 export interface UpdateCourtResponse {
@@ -317,17 +325,30 @@ export interface DeleteCourtResponse {
  * Hook để tạo court mới (admin only)
  */
 export const useCreateCourtMutation = (
-  options?: UseMutationOptions<Court, AxiosError, CreateCourtRequest>
+  options?: UseMutationOptions<Court, AxiosError, CreateCourtFormRequest>
 ) => {
   const queryClient = useQueryClient();
 
-  return useMutation<Court, AxiosError, CreateCourtRequest>({
-    mutationFn: async (courtData) => {
-      const response = await api.post<CreateCourtResponse>('/admin/courts', courtData);
+  return useMutation<Court, AxiosError, CreateCourtFormRequest>({
+    mutationFn: async ({ courtDTO, imageFile }) => {
+      const formData = new FormData();
+
+      // Thêm courtDTO as JSON string
+      formData.append('courtDTO', JSON.stringify(courtDTO));
+
+      // Thêm image file nếu có
+      if (imageFile) {
+        formData.append('imageFile', imageFile);
+      }
+
+      const response = await api.post<CreateCourtResponse>('/admin/courts', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       return response.data.detail;
     },
     onSuccess: () => {
-      // Invalidate both admin and user courts queries
       queryClient.invalidateQueries({ queryKey: ['admin-courts'] });
       queryClient.invalidateQueries({ queryKey: ['courts'] });
     },
@@ -339,17 +360,30 @@ export const useCreateCourtMutation = (
  * Hook để cập nhật court (admin only)
  */
 export const useUpdateCourtMutation = (
-  options?: UseMutationOptions<Court, AxiosError, { courtId: number; data: UpdateCourtRequest }>
+  options?: UseMutationOptions<Court, AxiosError, { courtId: number; data: UpdateCourtFormRequest }>
 ) => {
   const queryClient = useQueryClient();
 
-  return useMutation<Court, AxiosError, { courtId: number; data: UpdateCourtRequest }>({
-    mutationFn: async ({ courtId, data }) => {
-      const response = await api.patch<UpdateCourtResponse>(`/admin/courts/${courtId}`, data);
+  return useMutation<Court, AxiosError, { courtId: number; data: UpdateCourtFormRequest }>({
+    mutationFn: async ({ courtId, data: { courtDTO, imageFile } }) => {
+      const formData = new FormData();
+
+      // Thêm courtDTO as JSON string
+      formData.append('courtDTO', JSON.stringify(courtDTO));
+
+      // Thêm image file nếu có
+      if (imageFile) {
+        formData.append('imageFile', imageFile);
+      }
+
+      const response = await api.patch<UpdateCourtResponse>(`/admin/courts/${courtId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       return response.data.detail;
     },
     onSuccess: () => {
-      // Invalidate both admin and user courts queries
       queryClient.invalidateQueries({ queryKey: ['admin-courts'] });
       queryClient.invalidateQueries({ queryKey: ['courts'] });
     },

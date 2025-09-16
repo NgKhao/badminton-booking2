@@ -66,7 +66,6 @@ interface CourtFormData {
   status: 'AVAILABLE' | 'MAINTENANCE' | 'UNAVAILABLE';
   hourlyRate: number;
   description: string;
-  images: string[];
   isActive: boolean;
 }
 
@@ -153,7 +152,6 @@ export const AdminCourtsPage: React.FC = () => {
     status: 'AVAILABLE',
     hourlyRate: 0,
     description: '',
-    images: [],
     isActive: true,
   });
 
@@ -271,10 +269,6 @@ export const AdminCourtsPage: React.FC = () => {
       reader.onload = () => {
         const result = reader.result as string;
         setImagePreview(result);
-        setFormData({
-          ...formData,
-          images: [result], // Store base64 string for now
-        });
       };
       reader.readAsDataURL(file);
     }
@@ -285,7 +279,6 @@ export const AdminCourtsPage: React.FC = () => {
     setImagePreview('');
     setFormData({
       ...formData,
-      images: [],
     });
   };
 
@@ -298,7 +291,6 @@ export const AdminCourtsPage: React.FC = () => {
       status: 'AVAILABLE',
       hourlyRate: 0,
       description: '',
-      images: [],
       isActive: true,
     });
     setSelectedFile(null);
@@ -315,13 +307,12 @@ export const AdminCourtsPage: React.FC = () => {
       status: court.status,
       hourlyRate: court.hourlyRate,
       description: court.description ?? '',
-      images: court.images ?? [],
       isActive: court.isActive,
     });
 
     // Set preview for existing image
     if (court.images && court.images.length > 0) {
-      setImagePreview(court.images[0]);
+      setImagePreview(`${import.meta.env.VITE_IMG_URL}${court.images[0]}`);
     } else {
       setImagePreview('');
     }
@@ -349,33 +340,47 @@ export const AdminCourtsPage: React.FC = () => {
       return;
     }
 
-    const courtData: CreateCourtRequest = {
-      courtName: formData.courtName,
-      courtType: formData.courtType,
-      hourlyRate: formData.hourlyRate,
-      description: formData.description,
-      images: formData.images,
-      isActive: formData.isActive,
-    };
+    // Validate status/isActive combination
+    const validation = validateStatusChange(formData.status, formData.isActive);
+    if (!validation.isValid) {
+      setSnackbar({
+        open: true,
+        message: validation.message!,
+        severity: 'error',
+      });
+      return;
+    }
 
     if (editMode && selectedCourt) {
       // Update court
-      const updateData: UpdateCourtRequest = {
+      const courtDTO: UpdateCourtRequest = {
         courtName: formData.courtName,
         courtType: formData.courtType,
         hourlyRate: formData.hourlyRate,
         description: formData.description,
-        images: formData.images,
         isActive: formData.isActive,
       };
 
       updateCourtMutation.mutate({
         courtId: selectedCourt.id,
-        data: updateData,
+        data: {
+          courtDTO,
+          imageFile: selectedFile || undefined,
+        },
       });
     } else {
       // Create new court
-      createCourtMutation.mutate(courtData);
+      const courtDTO: CreateCourtRequest = {
+        courtName: formData.courtName,
+        courtType: formData.courtType,
+        hourlyRate: formData.hourlyRate,
+        description: formData.description,
+      };
+
+      createCourtMutation.mutate({
+        courtDTO,
+        imageFile: selectedFile || undefined,
+      });
     }
   };
 
@@ -392,6 +397,51 @@ export const AdminCourtsPage: React.FC = () => {
       message: 'Chức năng thay đổi trạng thái sân đang được phát triển',
       severity: 'info',
     });
+  };
+
+  // Thêm function để validate status change
+  const validateStatusChange = (
+    newStatus: string,
+    isActive: boolean
+  ): { isValid: boolean; message?: string } => {
+    // Nếu status khác AVAILABLE và isActive là true, không hợp lệ
+    if (newStatus !== 'AVAILABLE' && isActive) {
+      return {
+        isValid: false,
+        message: 'Sân chỉ có thể hoạt động khi trạng thái là "Có sẵn"',
+      };
+    }
+    return { isValid: true };
+  };
+
+  const handleStatusChange = (newStatus: string) => {
+    const newFormData = {
+      ...formData,
+      status: newStatus as 'AVAILABLE' | 'MAINTENANCE' | 'UNAVAILABLE',
+    };
+
+    // Tự động set isActive = false nếu status không phải AVAILABLE
+    if (newStatus !== 'AVAILABLE') {
+      newFormData.isActive = false;
+    }
+
+    setFormData(newFormData);
+  };
+
+  // Cập nhật handler cho isActive change
+  const handleActiveChange = (isActive: boolean) => {
+    const validation = validateStatusChange(formData.status, isActive);
+
+    if (!validation.isValid) {
+      setSnackbar({
+        open: true,
+        message: validation.message!,
+        severity: 'warning',
+      });
+      return;
+    }
+
+    setFormData({ ...formData, isActive });
   };
 
   return (
@@ -622,7 +672,7 @@ export const AdminCourtsPage: React.FC = () => {
                     {court.images && court.images.length > 0 ? (
                       <Box
                         component="img"
-                        src={court.images[0] || courtImage}
+                        src={`${import.meta.env.VITE_IMG_URL}${court.images[0]}` || courtImage}
                         alt={court.courtName}
                         sx={{
                           width: 60,
@@ -754,12 +804,7 @@ export const AdminCourtsPage: React.FC = () => {
                 <Select
                   value={formData.status}
                   label="Trạng thái"
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      status: e.target.value as 'AVAILABLE' | 'MAINTENANCE' | 'UNAVAILABLE',
-                    })
-                  }
+                  onChange={(e) => handleStatusChange(e.target.value)}
                 >
                   <MenuItem value="AVAILABLE">Có sẵn</MenuItem>
                   <MenuItem value="MAINTENANCE">Bảo trì</MenuItem>
@@ -865,10 +910,20 @@ export const AdminCourtsPage: React.FC = () => {
               control={
                 <Switch
                   checked={formData.isActive}
-                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                  onChange={(e) => handleActiveChange(e.target.checked)}
+                  disabled={formData.status !== 'AVAILABLE'} // Disable khi status không phải AVAILABLE
                 />
               }
-              label="Kích hoạt sân"
+              label={
+                <Box>
+                  <Typography>Kích hoạt sân</Typography>
+                  {formData.status !== 'AVAILABLE' && (
+                    <Typography variant="caption" color="warning.main">
+                      Sân chỉ có thể hoạt động khi trạng thái là "Có sẵn"
+                    </Typography>
+                  )}
+                </Box>
+              }
             />
           </Box>
         </DialogContent>
@@ -948,7 +1003,7 @@ export const AdminCourtsPage: React.FC = () => {
                 {selectedCourt.images && selectedCourt.images.length > 0 ? (
                   <Box
                     component="img"
-                    src={selectedCourt.images[0] || courtImage}
+                    src={`${import.meta.env.VITE_IMG_URL}${selectedCourt.images[0]}` || courtImage}
                     alt={selectedCourt.courtName}
                     sx={{
                       width: 200,

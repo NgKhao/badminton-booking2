@@ -344,10 +344,10 @@ export const AdminCustomersPage: React.FC = () => {
               size="small"
               sx={{ minWidth: 300 }}
             />
-
+            {/* 
             <Button variant="contained" startIcon={<Add />} onClick={handleAdd} sx={{ ml: 'auto' }}>
               Thêm khách hàng
-            </Button>
+            </Button> */}
 
             <Tooltip title="Làm mới dữ liệu">
               <IconButton onClick={() => refetch()}>
