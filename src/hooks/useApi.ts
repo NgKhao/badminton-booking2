@@ -802,6 +802,48 @@ export const useProcessPaymentMutation = (
   });
 };
 
+// Create Admin Booking API hooks
+export interface CreateAdminBookingRequest {
+  courtId: number;
+  email: string;
+  numberPhone: string;
+  fullName: string;
+  bookingDate: string; // YYYY-MM-DD format
+  startTime: string; // HH:mm format
+  endTime: string; // HH:mm format
+}
+
+export interface CreateAdminBookingResponse {
+  messenger: string;
+  status: number;
+  detail: AdminBooking;
+  instance: string;
+}
+
+/**
+ * Hook để tạo booking mới (admin only) - POST /admin/bookings
+ */
+export const useCreateAdminBookingMutation = (
+  options?: UseMutationOptions<AdminBooking, AxiosError, CreateAdminBookingRequest>
+) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (bookingData: CreateAdminBookingRequest): Promise<AdminBooking> => {
+      const response: AxiosResponse<CreateAdminBookingResponse> = await api.post(
+        '/admin/bookings',
+        bookingData
+      );
+      return response.data.detail;
+    },
+    onSuccess: () => {
+      // Invalidate admin bookings queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['adminBookings'] });
+    },
+    ...options,
+  });
+};
+
 // Update booking status API hooks
 export interface UpdateBookingStatusRequest {
   bookingId: number;

@@ -13,10 +13,15 @@ import {
   useAdminBookings,
   useProcessPaymentMutation,
   useUpdateBookingStatusMutation,
+  useCreateAdminBookingMutation,
   useCourts,
   useCustomers,
 } from '../../hooks/useApi';
-import type { AdminBooking, AdminBookingParams } from '../../hooks/useApi';
+import type {
+  AdminBooking,
+  AdminBookingParams,
+  CreateAdminBookingRequest,
+} from '../../hooks/useApi';
 
 // Extracted components
 import { BookingStatsCards } from '../../components/admin/bookings/BookingStatsCards';
@@ -173,6 +178,7 @@ export const AdminBookingsPage: React.FC = () => {
       user_id: customer.userId,
       full_name: customer.fullName,
       phone: customer.numberPhone,
+      email: customer.email, // Add email field for API
     }));
   }, [customersData?.customers]);
 
@@ -206,6 +212,22 @@ export const AdminBookingsPage: React.FC = () => {
     },
     onError: (error) => {
       console.error('Booking status update failed:', error);
+      // TODO: Add error toast/notification showing error.message
+    },
+  });
+
+  // Create booking mutation
+  const createBookingMutation = useCreateAdminBookingMutation({
+    onSuccess: (newBooking) => {
+      console.log('Booking created successfully:', newBooking);
+      refetch(); // Refresh booking data after successful creation
+      setIsDialogOpen(false);
+      reset();
+      resetCustomerForm();
+      // TODO: Add success toast/notification
+    },
+    onError: (error) => {
+      console.error('Booking creation failed:', error);
       // TODO: Add error toast/notification showing error.message
     },
   });
@@ -443,9 +465,47 @@ export const AdminBookingsPage: React.FC = () => {
       const totalAmount = hours * court.hourly_rate;
 
       if (isAddMode) {
-        // TODO: Call create booking API with form data
-        console.log('Create booking data:', data, 'totalAmount:', totalAmount);
-        refetch();
+        // Prepare data for API call
+        let apiData: CreateAdminBookingRequest;
+
+        if (data.is_new_customer === 'true') {
+          // New customer - use form data directly
+          if (
+            !data.customer_name?.trim() ||
+            !data.customer_phone?.trim() ||
+            !data.customer_email?.trim()
+          ) {
+            alert('Vui lòng nhập đầy đủ thông tin khách hàng mới (bao gồm email)!');
+            return;
+          }
+
+          apiData = {
+            courtId: data.court_id,
+            email: data.customer_email,
+            numberPhone: data.customer_phone,
+            fullName: data.customer_name,
+            bookingDate: data.booking_date,
+            startTime: data.start_time,
+            endTime: data.end_time,
+          };
+        } else {
+          // Existing customer - use customer details
+          // Email validation is handled in BookingDialog component
+
+          apiData = {
+            courtId: data.court_id,
+            email: customer.email || '', // Use empty string as fallback
+            numberPhone: customer.phone,
+            fullName: customer.full_name,
+            bookingDate: data.booking_date,
+            startTime: data.start_time,
+            endTime: data.end_time,
+          };
+        }
+
+        // Call API to create booking
+        createBookingMutation.mutate(apiData);
+        return; // Exit early, success/error will be handled by mutation callbacks
       } else if (selectedEvent) {
         // TODO: Call update booking API here
         refetch();
@@ -464,6 +524,7 @@ export const AdminBookingsPage: React.FC = () => {
       mappedCourts,
       mappedCustomers,
       resetCustomerForm,
+      createBookingMutation,
     ]
   );
 
@@ -517,13 +578,13 @@ export const AdminBookingsPage: React.FC = () => {
           break;
       }
 
-      // Add payment status indicator
-      if (booking.payment_status === 'unpaid' && booking.status === 'confirmed') {
-        border = '3px dashed #f44336'; // Red dashed border for unpaid
-        backgroundColor = '#ff5722'; // Orange-red for unpaid confirmed bookings
-      } else if (booking.payment_status === 'paid') {
-        border = '2px solid #4caf50'; // Green solid border for paid
-      }
+      // // Add payment status indicator
+      // if (booking.payment_status === 'unpaid' && booking.status === 'confirmed') {
+      //   border = '3px dashed #f44336'; // Red dashed border for unpaid
+      //   backgroundColor = '#ff5722'; // Orange-red for unpaid confirmed bookings
+      // } else if (booking.payment_status === 'paid') {
+      //   border = '2px solid #4caf50'; // Green solid border for paid
+      // }
 
       // Check for conflicts if enabled
       if (showConflicts) {
@@ -669,6 +730,7 @@ export const AdminBookingsPage: React.FC = () => {
         customers={mappedCustomers}
         currentConflicts={currentConflicts}
         isStatusLoading={updateBookingStatusMutation.isPending}
+        isSubmitLoading={createBookingMutation.isPending}
       />
 
       {/* Payment Dialog */}

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -64,6 +64,7 @@ interface Customer {
   user_id: number;
   full_name: string;
   phone: string;
+  email: string; // Add email field
 }
 
 interface CalendarEvent {
@@ -101,6 +102,7 @@ interface BookingDialogProps {
   customers: Customer[];
   currentConflicts: boolean;
   isStatusLoading?: boolean;
+  isSubmitLoading?: boolean; // Add loading state for submit
 }
 
 export const BookingDialog: React.FC<BookingDialogProps> = ({
@@ -117,9 +119,11 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
   customers,
   currentConflicts,
   isStatusLoading = false,
+  isSubmitLoading = false,
 }) => {
   const [customerMode, setCustomerMode] = useState<'existing' | 'new'>('existing');
   const [customerSearchQuery, setCustomerSearchQuery] = useState('');
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
   const {
     control,
@@ -156,6 +160,14 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
     );
   }, [customers, customerSearchQuery]);
 
+  // Reset states when dialog opens or customerMode changes
+  useEffect(() => {
+    if (open && isAddMode) {
+      setSelectedCustomer(null);
+      setCustomerSearchQuery('');
+    }
+  }, [open, isAddMode, customerMode]);
+
   const resetCustomerForm = () => {
     reset({
       customer_id: 0,
@@ -164,11 +176,20 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
       customer_email: '',
       is_new_customer: customerMode === 'new' ? 'true' : 'false',
     });
+    setSelectedCustomer(null); // Reset selected customer
   };
 
   const handleFormSubmit = (data: BookingFormData) => {
+    // Validate selected customer has email if using existing customer
+    if (customerMode === 'existing' && selectedCustomer && !selectedCustomer.email) {
+      alert(
+        'Khách hàng này chưa có email. Vui lòng chọn khách hàng khác hoặc thêm khách hàng mới.'
+      );
+      return;
+    }
+
     onSubmit(data);
-    onClose();
+    // Don't close dialog here - let parent component handle it based on success/error
   };
 
   return (
@@ -266,14 +287,19 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
                         {...field}
                         options={filteredCustomers}
                         getOptionLabel={(option) =>
-                          typeof option === 'object' ? `${option.full_name} - ${option.phone}` : ''
+                          typeof option === 'object'
+                            ? `${option.full_name} - ${option.email || 'Chưa có email'} - ${option.phone}`
+                            : ''
                         }
                         value={
                           filteredCustomers.find(
                             (customer) => customer.customer_id === field.value
                           ) || null
                         }
-                        onChange={(_, value) => field.onChange(value?.customer_id || 0)}
+                        onChange={(_, value) => {
+                          field.onChange(value?.customer_id || 0);
+                          setSelectedCustomer(value);
+                        }}
                         renderInput={(params) => (
                           <TextField
                             {...params}
@@ -284,14 +310,15 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
                           />
                         )}
                         renderOption={(props, option) => (
-                          <Box component="li" {...props}>
+                          <Box component="li" {...props} key={`customer-${option.customer_id}`}>
                             <PersonIcon sx={{ mr: 2, color: 'primary.main' }} />
                             <Box>
                               <Typography variant="body2" fontWeight="500">
                                 {option.full_name}
                               </Typography>
                               <Typography variant="caption" color="text.secondary">
-                                {option.phone} • ID: {option.customer_id}
+                                {option.phone} • {option.email || 'Chưa có email'} • ID:{' '}
+                                {option.customer_id}
                               </Typography>
                             </Box>
                           </Box>
@@ -300,6 +327,16 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
                       />
                     )}
                   />
+
+                  {/* Email warning for selected customer */}
+                  {customerMode === 'existing' && selectedCustomer && !selectedCustomer.email && (
+                    <Alert severity="warning" sx={{ mt: 2 }}>
+                      <Typography variant="body2">
+                        <strong>Cảnh báo:</strong> Khách hàng này chưa có email. Vui lòng chọn khách
+                        hàng khác hoặc thêm khách hàng mới.
+                      </Typography>
+                    </Alert>
+                  )}
                 </Box>
               )}
 
@@ -356,6 +393,7 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
                     name="customer_email"
                     control={control}
                     rules={{
+                      required: customerMode === 'new' ? 'Vui lòng nhập email' : false,
                       pattern: {
                         value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
                         message: 'Email không hợp lệ',
@@ -364,7 +402,7 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
                     render={({ field }) => (
                       <TextField
                         {...field}
-                        label="Email (không bắt buộc)"
+                        label="Email *"
                         type="email"
                         error={!!errors.customer_email}
                         helperText={errors.customer_email?.message}
@@ -633,10 +671,10 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
             <Button
               type="submit"
               variant="contained"
-              disabled={currentConflicts}
+              disabled={currentConflicts || isSubmitLoading}
               startIcon={<AddIcon />}
             >
-              Thêm
+              {isSubmitLoading ? 'Đang tạo...' : 'Thêm'}
             </Button>
           )}
         </DialogActions>
