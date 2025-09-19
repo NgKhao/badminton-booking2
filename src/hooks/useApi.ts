@@ -690,8 +690,90 @@ export const useDeleteCustomerMutation = (
 
 // ================== ADMIN API HOOKS ==================
 
+// Admin Booking interfaces matching API response
+export interface AdminBookingResponse {
+  messenger: string;
+  status: number;
+  detail: {
+    content: AdminBooking[];
+    pageNumber: number;
+    pageSize: number;
+    totalElements: number;
+    totalPages: number;
+    first: boolean;
+    last: boolean;
+  };
+  instance: string;
+}
+
+export interface AdminBooking {
+  id: number;
+  bookingCode: string;
+  court: {
+    id: number;
+    courtName: string;
+    courtType: 'INDOOR' | 'OUTDOOR';
+    hourlyRate: number;
+    description?: string;
+    images?: string[];
+    isActive: boolean;
+    status: 'AVAILABLE' | 'MAINTENANCE' | 'UNAVAILABLE';
+  };
+  customer: {
+    customerId: number;
+    numberPhone: string;
+    email: string;
+    fullname: string;
+  };
+  bookingDate: string;
+  startTime: string;
+  endTime: string;
+  duration: number;
+  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED';
+  totalAmount: number;
+  paymentStatus: 'PAID' | 'UNPAID';
+  paymentMethod?: string | null;
+  createdAt: string;
+  updatedAt?: string | null;
+}
+
+// Admin booking query parameters
+export interface AdminBookingParams {
+  month?: number;
+  year?: number;
+  week?: number;
+  day?: string; // format: YYYY-MM-DD
+}
+
 /**
- * Hook để lấy tất cả bookings (admin only)
+ * Hook để lấy admin bookings với các filter parameters
+ */
+export const useAdminBookings = (
+  params?: AdminBookingParams,
+  options?: UseQueryOptions<AdminBooking[], AxiosError>
+) => {
+  return useQuery({
+    queryKey: ['adminBookings', params],
+    queryFn: async (): Promise<AdminBooking[]> => {
+      const searchParams = new URLSearchParams();
+
+      if (params?.month) searchParams.append('month', params.month.toString());
+      if (params?.year) searchParams.append('year', params.year.toString());
+      if (params?.week) searchParams.append('week', params.week.toString());
+      if (params?.day) searchParams.append('day', params.day);
+
+      const url = `/admin/bookings${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+      const response: AxiosResponse<AdminBookingResponse> = await api.get(url);
+
+      // Extract content array from paginated response
+      return response.data.detail.content;
+    },
+    ...options,
+  });
+};
+
+/**
+ * Hook để lấy tất cả bookings (admin only) - legacy
  */
 export const useAllBookings = (options?: UseQueryOptions<Booking[], AxiosError>) => {
   return useQuery({
