@@ -42,17 +42,6 @@ export const CalendarControls: React.FC<CalendarControlsProps> = ({
     <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', mb: 3 }}>
       <Box sx={{ p: 3 }}>
         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={showConflicts}
-                onChange={(e) => onShowConflictsChange(e.target.checked)}
-                color="warning"
-              />
-            }
-            label="Hiển thị xung đột"
-          />
-
           <FormControl size="small" sx={{ minWidth: 150 }}>
             <InputLabel>Lọc sân</InputLabel>
             <Select
