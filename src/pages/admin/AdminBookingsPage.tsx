@@ -9,7 +9,11 @@ import { useForm } from 'react-hook-form';
 import { format, parseISO } from 'date-fns';
 
 // API hooks
-import { useAdminBookings, useProcessPaymentMutation } from '../../hooks/useApi';
+import {
+  useAdminBookings,
+  useProcessPaymentMutation,
+  useUpdateBookingStatusMutation,
+} from '../../hooks/useApi';
 import type { AdminBooking, AdminBookingParams } from '../../hooks/useApi';
 
 // Extracted components
@@ -175,6 +179,21 @@ export const AdminBookingsPage: React.FC = () => {
     },
     onError: (error) => {
       console.error('Payment failed:', error);
+      // TODO: Add error toast/notification showing error.message
+    },
+  });
+
+  // Update booking status mutation
+  const updateBookingStatusMutation = useUpdateBookingStatusMutation({
+    onSuccess: (updatedBooking) => {
+      console.log('Booking status updated successfully:', updatedBooking);
+      refetch(); // Refresh booking data after successful status update
+      setIsDialogOpen(false);
+      setSelectedEvent(null);
+      // TODO: Add success toast/notification
+    },
+    onError: (error) => {
+      console.error('Booking status update failed:', error);
       // TODO: Add error toast/notification showing error.message
     },
   });
@@ -453,18 +472,22 @@ export const AdminBookingsPage: React.FC = () => {
   // Handle confirm booking (pending -> confirmed)
   const handleConfirmBooking = useCallback(() => {
     if (selectedEvent && selectedEvent.resource.status === 'pending') {
-      // TODO: Call confirm booking API here
-      refetch();
+      updateBookingStatusMutation.mutate({
+        bookingId: selectedEvent.resource.booking_id,
+        newStatus: 'CONFIRMED',
+      });
     }
-  }, [selectedEvent, refetch]);
+  }, [selectedEvent, updateBookingStatusMutation]);
 
   // Handle cancel booking (pending/confirmed -> cancelled)
   const handleCancelBooking = useCallback(() => {
     if (selectedEvent) {
-      // TODO: Call cancel booking API here
-      refetch();
+      updateBookingStatusMutation.mutate({
+        bookingId: selectedEvent.resource.booking_id,
+        newStatus: 'CANCELLED',
+      });
     }
-  }, [selectedEvent, refetch]);
+  }, [selectedEvent, updateBookingStatusMutation]);
 
   // Event style getter for conflicts, status and payment
   const eventStyleGetter = useCallback(
@@ -637,6 +660,7 @@ export const AdminBookingsPage: React.FC = () => {
         courts={mockCourts}
         customers={filteredCustomers}
         currentConflicts={currentConflicts}
+        isStatusLoading={updateBookingStatusMutation.isPending}
       />
 
       {/* Payment Dialog */}

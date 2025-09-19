@@ -100,6 +100,7 @@ interface BookingDialogProps {
   courts: Court[];
   customers: Customer[];
   currentConflicts: boolean;
+  isStatusLoading?: boolean;
 }
 
 export const BookingDialog: React.FC<BookingDialogProps> = ({
@@ -115,6 +116,7 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
   courts,
   customers,
   currentConflicts,
+  isStatusLoading = false,
 }) => {
   const [customerMode, setCustomerMode] = useState<'existing' | 'new'>('existing');
   const [customerSearchQuery, setCustomerSearchQuery] = useState('');
@@ -563,18 +565,20 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
                     variant="contained"
                     startIcon={<CheckCircleIcon />}
                     onClick={onConfirmBooking}
+                    disabled={isStatusLoading}
                     sx={{ mr: 1 }}
                   >
-                    Xác nhận đặt sân
+                    {isStatusLoading ? 'Đang xử lý...' : 'Xác nhận đặt sân'}
                   </Button>
                   <Button
                     color="error"
                     variant="outlined"
                     startIcon={<CancelIcon />}
                     onClick={onCancelBooking}
+                    disabled={isStatusLoading}
                     sx={{ mr: 1 }}
                   >
-                    Hủy đặt sân
+                    {isStatusLoading ? 'Đang xử lý...' : 'Hủy đặt sân'}
                   </Button>
                 </>
               )}
@@ -591,6 +595,7 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
                         onClose();
                       }
                     }}
+                    disabled={isStatusLoading}
                     sx={{ mr: 'auto' }}
                   >
                     Thanh toán
@@ -604,9 +609,10 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
                   variant="outlined"
                   startIcon={<CancelIcon />}
                   onClick={onCancelBooking}
+                  disabled={isStatusLoading}
                   sx={{ mr: 1 }}
                 >
-                  Hủy đặt sân
+                  {isStatusLoading ? 'Đang xử lý...' : 'Hủy đặt sân'}
                 </Button>
               )}
             </>

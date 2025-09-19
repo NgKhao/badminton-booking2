@@ -802,6 +802,39 @@ export const useProcessPaymentMutation = (
   });
 };
 
+// Update booking status API hooks
+export interface UpdateBookingStatusRequest {
+  bookingId: number;
+  newStatus: 'CANCELLED' | 'CONFIRMED';
+}
+
+export interface UpdateBookingStatusResponse {
+  messenger: string;
+  status: number;
+  detail: AdminBooking;
+  instance: string;
+}
+
+/**
+ * Hook để update trạng thái booking (admin only)
+ */
+export const useUpdateBookingStatusMutation = (
+  options?: UseMutationOptions<AdminBooking, AxiosError, UpdateBookingStatusRequest>
+) => {
+  return useMutation({
+    mutationFn: async ({
+      bookingId,
+      newStatus,
+    }: UpdateBookingStatusRequest): Promise<AdminBooking> => {
+      const response: AxiosResponse<UpdateBookingStatusResponse> = await api.put(
+        `/admin/bookings/${bookingId}/status?newStatus=${newStatus}`
+      );
+      return response.data.detail;
+    },
+    ...options,
+  });
+};
+
 /**
  * Hook để lấy tất cả bookings (admin only) - legacy
  */
