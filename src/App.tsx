@@ -18,7 +18,6 @@ import { CourtsPage } from './pages/user/CourtsPage';
 
 // Admin Pages
 import { AdminLayout } from './pages/admin/AdminLayout';
-import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminCourtsPage } from './pages/admin/AdminCourtsPage';
 import { AdminCustomersPage } from './pages/admin/AdminCustomersPage';
 import { AdminBookingsPage } from './pages/admin/AdminBookingsPage';
@@ -148,7 +147,7 @@ function App() {
                     </AdminRoute>
                   }
                 >
-                  <Route index element={<AdminDashboard />} />
+                  <Route index element={<AdminCourtsPage />} />
                   <Route path="courts" element={<AdminCourtsPage />} />
                   <Route path="customers" element={<AdminCustomersPage />} />
                   <Route path="bookings" element={<AdminBookingsPage />} />

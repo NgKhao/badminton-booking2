@@ -77,8 +77,8 @@ export const AdminLoginPage: React.FC = () => {
         refreshToken: data.detail.token.refreshToken,
       });
 
-      // Chuyển hướng đến admin dashboard
-      navigate('/admin');
+      // Chuyển hướng đến trang quản lý sân
+      navigate('/admin/courts');
     },
     onError: (error) => {
       console.error('Admin login error:', error);

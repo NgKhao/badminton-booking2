@@ -24,7 +24,6 @@ import {
 } from '@mui/material';
 import {
   Menu as MenuIcon,
-  Dashboard,
   SportsTennis,
   EventNote,
   People,
@@ -47,12 +46,6 @@ interface AdminLayoutProps {
 }
 
 const menuItems = [
-  {
-    text: 'Dashboard',
-    icon: <Dashboard />,
-    path: '/admin',
-    description: 'Tổng quan hệ thống',
-  },
   {
     text: 'Quản lý sân',
     icon: <SportsTennis />,
@@ -172,13 +165,15 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           </Typography>
         );
       } else {
+        // Điều hướng /admin sang /admin/courts
+        const actualRouteTo = routeTo === '/admin' ? '/admin/courts' : routeTo;
         breadcrumbs.push(
           <Link
             key={routeTo}
             color="inherit"
             onClick={(e) => {
               e.preventDefault();
-              navigate(routeTo);
+              navigate(actualRouteTo);
             }}
             sx={{ textDecoration: 'none', cursor: 'pointer' }}
           >
