@@ -66,6 +66,7 @@ interface PaymentDialogProps {
   onSubmit: (data: PaymentFormData) => void;
   onMarkUnpaid: (booking: Booking) => void;
   selectedBooking: Booking | null;
+  isLoading?: boolean;
 }
 
 export const PaymentDialog: React.FC<PaymentDialogProps> = ({
@@ -74,6 +75,7 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
   onSubmit,
   onMarkUnpaid,
   selectedBooking,
+  isLoading = false,
 }) => {
   const {
     control,
@@ -262,15 +264,25 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
 
         <DialogActions>
           {selectedBooking?.payment_status === 'paid' && (
-            <Button color="warning" onClick={handleMarkUnpaidClick}>
+            <Button color="warning" onClick={handleMarkUnpaidClick} disabled={isLoading}>
               Đánh dấu chưa thanh toán
             </Button>
           )}
-          <Button onClick={onClose}>Hủy</Button>
-          <Button type="submit" variant="contained" color="success" startIcon={<PaymentIcon />}>
-            {selectedBooking?.payment_status === 'paid'
-              ? 'Cập nhật thanh toán'
-              : 'Xác nhận thanh toán'}
+          <Button onClick={onClose} disabled={isLoading}>
+            Hủy
+          </Button>
+          <Button
+            type="submit"
+            variant="contained"
+            color="success"
+            startIcon={<PaymentIcon />}
+            disabled={isLoading}
+          >
+            {isLoading
+              ? 'Đang xử lý...'
+              : selectedBooking?.payment_status === 'paid'
+                ? 'Cập nhật thanh toán'
+                : 'Xác nhận thanh toán'}
           </Button>
         </DialogActions>
       </form>

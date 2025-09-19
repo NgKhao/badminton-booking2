@@ -9,7 +9,7 @@ import { useForm } from 'react-hook-form';
 import { format, parseISO } from 'date-fns';
 
 // API hooks
-import { useAdminBookings } from '../../hooks/useApi';
+import { useAdminBookings, useProcessPaymentMutation } from '../../hooks/useApi';
 import type { AdminBooking, AdminBookingParams } from '../../hooks/useApi';
 
 // Extracted components
@@ -163,6 +163,22 @@ export const AdminBookingsPage: React.FC = () => {
   // Fetch bookings using API
   const { data: adminBookings = [], isLoading, error, refetch } = useAdminBookings(apiParams);
 
+  // Payment mutation
+  const processPaymentMutation = useProcessPaymentMutation({
+    onSuccess: (updatedBooking) => {
+      console.log('Payment successful:', updatedBooking);
+      refetch(); // Refresh booking data after successful payment
+      setIsPaymentDialogOpen(false);
+      setSelectedBookingForPayment(null);
+      resetPayment();
+      // TODO: Add success toast/notification
+    },
+    onError: (error) => {
+      console.error('Payment failed:', error);
+      // TODO: Add error toast/notification showing error.message
+    },
+  });
+
   // Convert API data to legacy format for existing components
   const bookings = useMemo(() => {
     return adminBookings.map(mapAdminBookingToBooking);
@@ -213,15 +229,15 @@ export const AdminBookingsPage: React.FC = () => {
     (data: PaymentFormData) => {
       if (!selectedBookingForPayment) return;
 
-      // TODO: Call payment API with data
-      console.log('Payment data:', data);
-      refetch();
+      // Map payment method: 'cash' -> 'COD', 'transfer' -> 'TRANSFER'
+      const apiMethod = data.payment_method === 'cash' ? 'COD' : 'TRANSFER';
 
-      setIsPaymentDialogOpen(false);
-      setSelectedBookingForPayment(null);
-      resetPayment();
+      processPaymentMutation.mutate({
+        bookingId: selectedBookingForPayment.booking_id,
+        method: apiMethod,
+      });
     },
-    [selectedBookingForPayment, resetPayment, refetch]
+    [selectedBookingForPayment, processPaymentMutation]
   );
 
   const handleMarkUnpaid = (booking: Booking) => {
@@ -633,6 +649,7 @@ export const AdminBookingsPage: React.FC = () => {
         onSubmit={onPaymentSubmit}
         onMarkUnpaid={handleMarkUnpaid}
         selectedBooking={selectedBookingForPayment}
+        isLoading={processPaymentMutation.isPending}
       />
     </Box>
   );

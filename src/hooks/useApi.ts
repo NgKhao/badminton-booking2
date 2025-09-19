@@ -772,6 +772,36 @@ export const useAdminBookings = (
   });
 };
 
+// Payment API hooks
+export interface ProcessPaymentRequest {
+  bookingId: number;
+  method: 'COD' | 'TRANSFER';
+}
+
+export interface ProcessPaymentResponse {
+  messenger: string;
+  status: number;
+  detail: AdminBooking;
+  instance: string;
+}
+
+/**
+ * Hook để xử lý thanh toán booking (admin only)
+ */
+export const useProcessPaymentMutation = (
+  options?: UseMutationOptions<AdminBooking, AxiosError, ProcessPaymentRequest>
+) => {
+  return useMutation({
+    mutationFn: async ({ bookingId, method }: ProcessPaymentRequest): Promise<AdminBooking> => {
+      const response: AxiosResponse<ProcessPaymentResponse> = await api.post(
+        `/admin/bookings/${bookingId}/pay?method=${method}`
+      );
+      return response.data.detail;
+    },
+    ...options,
+  });
+};
+
 /**
  * Hook để lấy tất cả bookings (admin only) - legacy
  */
