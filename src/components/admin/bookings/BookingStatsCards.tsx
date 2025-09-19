@@ -5,10 +5,13 @@ import {
   Warning as WarningIcon,
   Cancel as CancelIcon,
   EventNote,
+  AttachMoney as MoneyIcon,
 } from '@mui/icons-material';
 
 interface Booking {
   status: 'pending' | 'confirmed' | 'cancelled';
+  total_amount: number;
+  payment_status?: 'unpaid' | 'paid';
 }
 
 interface BookingStatsCardsProps {
@@ -20,6 +23,23 @@ export const BookingStatsCards: React.FC<BookingStatsCardsProps> = ({ bookings }
   const pendingCount = bookings.filter((b) => b.status === 'pending').length;
   const cancelledCount = bookings.filter((b) => b.status === 'cancelled').length;
   const totalCount = bookings.length;
+
+  // Calculate revenue statistics
+  const totalRevenue = bookings
+    .filter((b) => b.status === 'confirmed' && b.payment_status === 'paid')
+    .reduce((sum, b) => sum + (b.total_amount || 0), 0);
+
+  const pendingRevenue = bookings
+    .filter((b) => b.status === 'confirmed' && b.payment_status === 'unpaid')
+    .reduce((sum, b) => sum + (b.total_amount || 0), 0);
+
+  // Format currency
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+    }).format(amount);
+  };
 
   return (
     <Box
@@ -90,6 +110,39 @@ export const BookingStatsCards: React.FC<BookingStatsCardsProps> = ({ bookings }
               </Typography>
             </Box>
             <EventNote sx={{ fontSize: 40, color: 'primary.main' }} />
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* Revenue Cards */}
+      <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Doanh thu đã thu
+              </Typography>
+              <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'success.main' }}>
+                {formatCurrency(totalRevenue)}
+              </Typography>
+            </Box>
+            <MoneyIcon sx={{ fontSize: 40, color: 'success.main' }} />
+          </Box>
+        </CardContent>
+      </Card>
+
+      <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Doanh thu chưa thu
+              </Typography>
+              <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'warning.main' }}>
+                {formatCurrency(pendingRevenue)}
+              </Typography>
+            </Box>
+            <MoneyIcon sx={{ fontSize: 40, color: 'warning.main' }} />
           </Box>
         </CardContent>
       </Card>

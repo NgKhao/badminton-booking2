@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -129,7 +129,7 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
   } = useForm<BookingFormData>({
     defaultValues: {
       customer_id: 0,
-      court_id: 0,
+      court_id: courts.length > 0 ? courts[0].court_id : 0,
       booking_date: '',
       start_time: '',
       end_time: '',
@@ -142,12 +142,19 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
   });
 
   // Filter customers based on search query
-  const filteredCustomers = customers.filter(
-    (customer) =>
-      customer.full_name.toLowerCase().includes(customerSearchQuery.toLowerCase()) ||
-      customer.phone.includes(customerSearchQuery) ||
-      customer.customer_id.toString().includes(customerSearchQuery)
-  );
+  const filteredCustomers = useMemo(() => {
+    if (!customerSearchQuery.trim()) {
+      // Show first 50 customers when no search query to improve performance
+      return customers.slice(0, 50);
+    }
+
+    return customers.filter(
+      (customer) =>
+        customer.full_name?.toLowerCase().includes(customerSearchQuery.toLowerCase()) ||
+        customer.phone?.includes(customerSearchQuery) ||
+        customer.customer_id?.toString().includes(customerSearchQuery)
+    );
+  }, [customers, customerSearchQuery]);
 
   const resetCustomerForm = () => {
     reset({
@@ -261,7 +268,11 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
                         getOptionLabel={(option) =>
                           typeof option === 'object' ? `${option.full_name} - ${option.phone}` : ''
                         }
-                        value={filteredCustomers.find((c) => c.customer_id === field.value) || null}
+                        value={
+                          filteredCustomers.find(
+                            (customer) => customer.customer_id === field.value
+                          ) || null
+                        }
                         onChange={(_, value) => field.onChange(value?.customer_id || 0)}
                         renderInput={(params) => (
                           <TextField

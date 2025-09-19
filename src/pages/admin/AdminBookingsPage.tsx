@@ -13,6 +13,8 @@ import {
   useAdminBookings,
   useProcessPaymentMutation,
   useUpdateBookingStatusMutation,
+  useCourts,
+  useCustomers,
 } from '../../hooks/useApi';
 import type { AdminBooking, AdminBookingParams } from '../../hooks/useApi';
 
@@ -24,21 +26,6 @@ import { CalendarControls } from '../../components/admin/bookings/CalendarContro
 
 // Set up the localizer for React Big Calendar
 const localizer = momentLocalizer(moment);
-
-// Mock data for courts (will be replaced with API later)
-const mockCourts = [
-  { court_id: 1, court_name: 'Sân 1', court_type: 'Trong nhà', hourly_rate: 150000 },
-  { court_id: 2, court_name: 'Sân 2', court_type: 'Trong nhà', hourly_rate: 150000 },
-  { court_id: 3, court_name: 'Sân 3', court_type: 'Ngoài trời', hourly_rate: 120000 },
-  { court_id: 4, court_name: 'Sân 4', court_type: 'Ngoài trời', hourly_rate: 120000 },
-];
-
-// Mock data for customers (will be replaced with API later)
-const mockCustomers = [
-  { customer_id: 1, user_id: 1, full_name: 'Nguyễn Văn A', phone: '0123456789' },
-  { customer_id: 2, user_id: 2, full_name: 'Trần Thị B', phone: '0987654321' },
-  { customer_id: 3, user_id: 3, full_name: 'Lê Văn C', phone: '0123456788' },
-];
 
 // Mapping function: Convert AdminBooking to legacy Booking format for components
 const mapAdminBookingToBooking = (adminBooking: AdminBooking): Booking => {
@@ -128,10 +115,6 @@ export const AdminBookingsPage: React.FC = () => {
   const [showConflicts, setShowConflicts] = useState(true);
   const [selectedCourt, setSelectedCourt] = useState<number | 'all'>('all');
 
-  // Customer search states
-  const [customerSearchQuery, setCustomerSearchQuery] = useState('');
-  const [filteredCustomers, setFilteredCustomers] = useState(mockCustomers);
-
   // Payment dialog states
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [selectedBookingForPayment, setSelectedBookingForPayment] = useState<Booking | null>(null);
@@ -166,6 +149,35 @@ export const AdminBookingsPage: React.FC = () => {
 
   // Fetch bookings using API
   const { data: adminBookings = [], isLoading, error, refetch } = useAdminBookings(apiParams);
+
+  // Fetch courts and customers using API
+  const { data: courtsData } = useCourts();
+  const { data: customersData } = useCustomers();
+
+  // Convert API Court format to component expected format
+  const mappedCourts = useMemo(() => {
+    const courtsArray = courtsData || [];
+    return courtsArray.map((court) => ({
+      court_id: court.id,
+      court_name: court.courtName,
+      court_type: court.courtType === 'INDOOR' ? 'Trong nhà' : 'Ngoài trời',
+      hourly_rate: court.hourlyRate,
+    }));
+  }, [courtsData]);
+
+  // Convert API Customer format to component expected format
+  const mappedCustomers = useMemo(() => {
+    const customersArray = customersData?.customers || [];
+    return customersArray.map((customer) => ({
+      customer_id: customer.customerId,
+      user_id: customer.userId,
+      full_name: customer.fullName,
+      phone: customer.numberPhone,
+    }));
+  }, [customersData?.customers]);
+
+  // Customer search query is handled within BookingDialog component
+  // No need for filtering logic here
 
   // Payment mutation
   const processPaymentMutation = useProcessPaymentMutation({
@@ -211,27 +223,10 @@ export const AdminBookingsPage: React.FC = () => {
   // Watch form values for conflict detection
   const watchedValues = watch();
 
-  // Filter customers based on search query
-  React.useEffect(() => {
-    if (!customerSearchQuery.trim()) {
-      setFilteredCustomers(mockCustomers);
-      return;
-    }
-
-    const filtered = mockCustomers.filter(
-      (customer) =>
-        customer.full_name.toLowerCase().includes(customerSearchQuery.toLowerCase()) ||
-        customer.phone.includes(customerSearchQuery) ||
-        customer.user_id.toString().includes(customerSearchQuery)
-    );
-    setFilteredCustomers(filtered);
-  }, [customerSearchQuery]);
-
   // Reset customer form when switching modes
-  const resetCustomerForm = () => {
-    setCustomerSearchQuery('');
-    setFilteredCustomers(mockCustomers);
-  };
+  const resetCustomerForm = useCallback(() => {
+    // Customer search is now handled within BookingDialog component
+  }, []);
 
   // Handle payment processing
   const handleOpenPaymentDialog = (booking: Booking) => {
@@ -348,13 +343,16 @@ export const AdminBookingsPage: React.FC = () => {
   }, [watchedValues, checkConflicts, selectedEvent]);
 
   // Handle event selection - only view details, no editing
-  const handleSelectEvent = useCallback((event: CalendarEvent) => {
-    setSelectedEvent(event);
-    setIsAddMode(false);
-    // Just show booking details, no editing
-    resetCustomerForm();
-    setIsDialogOpen(true);
-  }, []);
+  const handleSelectEvent = useCallback(
+    (event: CalendarEvent) => {
+      setSelectedEvent(event);
+      setIsAddMode(false);
+      // Just show booking details, no editing
+      resetCustomerForm();
+      setIsDialogOpen(true);
+    },
+    [resetCustomerForm]
+  );
 
   // Handle slot selection for adding new booking
   const handleSelectSlot = useCallback(
@@ -365,7 +363,8 @@ export const AdminBookingsPage: React.FC = () => {
       // Set default values for new booking
       reset({
         customer_id: 0,
-        court_id: selectedCourt === 'all' ? 1 : (selectedCourt as number),
+        court_id:
+          selectedCourt === 'all' ? mappedCourts[0]?.court_id || 1 : (selectedCourt as number),
         booking_date: format(start, 'yyyy-MM-dd'),
         start_time: format(start, 'HH:mm'),
         end_time: format(end, 'HH:mm'),
@@ -379,7 +378,7 @@ export const AdminBookingsPage: React.FC = () => {
       resetCustomerForm();
       setIsDialogOpen(true);
     },
-    [reset, selectedCourt]
+    [reset, selectedCourt, resetCustomerForm, mappedCourts]
   );
 
   // Handle form submission
@@ -391,7 +390,7 @@ export const AdminBookingsPage: React.FC = () => {
       }
 
       let customer;
-      const court = mockCourts.find((c) => c.court_id === data.court_id);
+      const court = mappedCourts.find((c) => c.court_id === data.court_id);
 
       if (!court) {
         alert('Không tìm thấy sân!');
@@ -407,15 +406,15 @@ export const AdminBookingsPage: React.FC = () => {
         }
 
         // Check if phone already exists
-        const existingCustomer = mockCustomers.find((c) => c.phone === data.customer_phone);
+        const existingCustomer = mappedCustomers.find((c) => c.phone === data.customer_phone);
         if (existingCustomer) {
           alert('Số điện thoại này đã được đăng ký! Vui lòng sử dụng tính năng tìm khách hàng.');
           return;
         }
 
         // Create new customer (in real app, this would be API call)
-        const newCustomerId = Math.max(...mockCustomers.map((c) => c.customer_id)) + 1;
-        const newUserId = Math.max(...mockCustomers.map((c) => c.user_id)) + 1;
+        const newCustomerId = Math.max(...mappedCustomers.map((c) => c.customer_id), 0) + 1;
+        const newUserId = Math.max(...mappedCustomers.map((c) => c.user_id), 0) + 1;
 
         customer = {
           customer_id: newCustomerId,
@@ -424,13 +423,13 @@ export const AdminBookingsPage: React.FC = () => {
           phone: data.customer_phone || '',
         };
 
-        // Add to mock data (in real app, this would be handled by backend)
-        mockCustomers.push(customer);
+        // TODO: In real app, call API to create new customer
+        // For now, just use the temporary customer object
 
         // Update form data with new customer ID
         data.customer_id = newCustomerId;
       } else {
-        customer = mockCustomers.find((c) => c.customer_id === data.customer_id);
+        customer = mappedCustomers.find((c) => c.customer_id === data.customer_id);
         if (!customer) {
           alert('Vui lòng chọn khách hàng!');
           return;
@@ -456,7 +455,16 @@ export const AdminBookingsPage: React.FC = () => {
       reset();
       resetCustomerForm();
     },
-    [currentConflicts, isAddMode, selectedEvent, reset, refetch]
+    [
+      currentConflicts,
+      isAddMode,
+      selectedEvent,
+      reset,
+      refetch,
+      mappedCourts,
+      mappedCustomers,
+      resetCustomerForm,
+    ]
   );
 
   // Handle delete booking
@@ -582,7 +590,7 @@ export const AdminBookingsPage: React.FC = () => {
         onShowConflictsChange={setShowConflicts}
         selectedCourt={selectedCourt}
         onSelectedCourtChange={setSelectedCourt}
-        courts={mockCourts}
+        courts={mappedCourts}
         onRefresh={() => {
           refetch();
         }}
@@ -591,7 +599,7 @@ export const AdminBookingsPage: React.FC = () => {
           setIsAddMode(true);
           reset({
             customer_id: 0,
-            court_id: 1,
+            court_id: mappedCourts[0]?.court_id || 1,
             booking_date: format(new Date(), 'yyyy-MM-dd'),
             start_time: '08:00',
             end_time: '10:00',
@@ -657,8 +665,8 @@ export const AdminBookingsPage: React.FC = () => {
         onOpenPaymentDialog={handleOpenPaymentDialog}
         isAddMode={isAddMode}
         selectedEvent={selectedEvent}
-        courts={mockCourts}
-        customers={filteredCustomers}
+        courts={mappedCourts}
+        customers={mappedCustomers}
         currentConflicts={currentConflicts}
         isStatusLoading={updateBookingStatusMutation.isPending}
       />
