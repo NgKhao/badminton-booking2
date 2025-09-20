@@ -24,7 +24,7 @@ import {
   CircularProgress,
   Skeleton,
 } from '@mui/material';
-import type { SelectChangeEvent } from '@mui/material';
+
 import {
   SportsTennis,
   AccessTime,
@@ -49,33 +49,14 @@ import {
   isBefore,
   addMinutes,
   differenceInMinutes,
+  parse,
+  isWithinInterval,
 } from 'date-fns';
 import { useAuthStore } from '../../store/authStore';
+import { useCourtAvailability } from '../../hooks/useApi';
 import type { Court } from '../../types';
 
 const steps = ['Chọn thời gian', 'Xác nhận', 'Hoàn thành'];
-
-// Mock existing bookings for conflict detection
-const mockExistingBookings = [
-  {
-    court_id: 1,
-    date: new Date(),
-    start_time: new Date().setHours(8, 0, 0, 0),
-    end_time: new Date().setHours(10, 0, 0, 0),
-  },
-  {
-    court_id: 1,
-    date: new Date(),
-    start_time: new Date().setHours(14, 0, 0, 0),
-    end_time: new Date().setHours(16, 0, 0, 0),
-  },
-  {
-    court_id: 2,
-    date: new Date(),
-    start_time: new Date().setHours(9, 0, 0, 0),
-    end_time: new Date().setHours(11, 0, 0, 0),
-  },
-];
 
 export const BookingPage: React.FC = () => {
   const location = useLocation();
@@ -91,33 +72,42 @@ export const BookingPage: React.FC = () => {
 
   const { user } = useAuthStore();
 
-  // Check if a time slot conflicts with existing bookings
-  const hasConflict = (courtId: number, date: Date, startTime: Date, endTime: Date): boolean => {
-    return mockExistingBookings.some((booking) => {
-      if (booking.court_id !== courtId || !isSameDay(new Date(booking.date), date)) {
-        return false;
-      }
+  // Format date for API call (YYYY-MM-DD)
+  const formattedDate = format(selectedDate, 'yyyy-MM-dd');
 
-      const bookingStart = new Date(booking.start_time);
-      const bookingEnd = new Date(booking.end_time);
+  // Fetch court availability from API
+  const {
+    data: availabilitySlots = [],
+    isLoading: isLoadingAvailability,
+    error: availabilityError,
+  } = useCourtAvailability(selectedCourt?.id || 0, formattedDate);
 
-      return (
-        (isAfter(startTime, bookingStart) && isBefore(startTime, bookingEnd)) ||
-        (isAfter(endTime, bookingStart) && isBefore(endTime, bookingEnd)) ||
-        (isBefore(startTime, bookingStart) && isAfter(endTime, bookingEnd))
-      );
-    });
-  };
+  // Check if a time slot is within available periods from API
+  const isSlotAvailable = useCallback(
+    (slotTime: Date): boolean => {
+      if (!availabilitySlots.length) return false;
 
-  // Check if a specific 30-minute slot is available
-  const isSlotAvailable = useCallback((courtId: number, date: Date, slotTime: Date): boolean => {
-    const slotEnd = addMinutes(slotTime, 30);
-    return !hasConflict(courtId, date, slotTime, slotEnd);
-  }, []);
+      const slotTimeString = format(slotTime, 'HH:mm');
+      const slotEndTime = format(addMinutes(slotTime, 30), 'HH:mm');
 
-  // Generate all possible 30-minute time slots for the day
+      return availabilitySlots.some((slot) => {
+        const slotStart = parse(slot.startTime, 'HH:mm', selectedDate);
+        const slotEnd = parse(slot.endTime, 'HH:mm', selectedDate);
+        const currentSlotStart = parse(slotTimeString, 'HH:mm', selectedDate);
+        const currentSlotEnd = parse(slotEndTime, 'HH:mm', selectedDate);
+
+        return (
+          isWithinInterval(currentSlotStart, { start: slotStart, end: slotEnd }) &&
+          isWithinInterval(currentSlotEnd, { start: slotStart, end: slotEnd })
+        );
+      });
+    },
+    [availabilitySlots, selectedDate]
+  );
+
+  // Generate all possible 30-minute time slots for the day based on availability
   const getAllTimeSlots = useMemo(() => {
-    if (!selectedDate) return [];
+    if (!selectedDate || !availabilitySlots) return [];
 
     const slots = [];
     const startOfDay = new Date(selectedDate);
@@ -135,7 +125,7 @@ export const BookingPage: React.FC = () => {
     }
 
     return slots;
-  }, [selectedDate]);
+  }, [selectedDate, availabilitySlots]);
 
   // Calculate total amount (removed peak hour pricing)
   const calculateTotalAmount = (): number => {
@@ -144,12 +134,6 @@ export const BookingPage: React.FC = () => {
     const durationInMinutes = differenceInMinutes(selectedEndTime, selectedStartTime);
     const durationInHours = durationInMinutes / 60;
     return Math.round(selectedCourt.hourlyRate * durationInHours);
-  };
-
-  const handleCourtSelect = (court: Court) => {
-    setSelectedCourt(court);
-    setSelectedStartTime(null);
-    setActiveStep(1);
   };
 
   const handleTimeConfirm = () => {
@@ -236,9 +220,7 @@ export const BookingPage: React.FC = () => {
 
             <div className="grid grid-cols-3 gap-2 max-h-[400px] overflow-y-auto p-2">
               {getAllTimeSlots.map((slot, index) => {
-                const isAvailable = selectedCourt
-                  ? isSlotAvailable(selectedCourt.id, selectedDate, slot)
-                  : false;
+                const isAvailable = isSlotAvailable(slot);
                 const isSelected =
                   selectedStartTime &&
                   selectedEndTime &&
@@ -354,10 +336,8 @@ export const BookingPage: React.FC = () => {
           disabled={
             !selectedStartTime ||
             !selectedEndTime ||
-            (!!selectedCourt &&
-              !!selectedStartTime &&
-              !!selectedEndTime &&
-              hasConflict(selectedCourt.id, selectedDate, selectedStartTime, selectedEndTime))
+            !selectedCourt ||
+            !isSlotAvailable(selectedStartTime)
           }
           className="bg-emerald-600 hover:bg-emerald-700"
         >

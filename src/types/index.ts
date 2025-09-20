@@ -124,3 +124,14 @@ export interface TimeSlot {
   is_available: boolean;
   price: number;
 }
+
+// Court availability API types
+export interface AvailabilitySlot {
+  startTime: string; // Format: "HH:mm"
+  endTime: string; // Format: "HH:mm"
+}
+
+export interface CourtAvailabilityParams {
+  courtId: number;
+  date: string; // Format: "YYYY-MM-DD"
+}

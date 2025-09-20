@@ -12,6 +12,7 @@ import {
   type RegisterResponse as AuthRegisterResponse,
 } from '../services/authService';
 import type { AxiosResponse, AxiosError } from 'axios';
+import type { AvailabilitySlot } from '../types';
 
 // ================== AUTH API HOOKS ==================
 
@@ -304,6 +305,26 @@ export const useCourt = (courtId: number, options?: UseQueryOptions<Court, Axios
       return response.data.detail;
     },
     enabled: !!courtId,
+    ...options,
+  });
+};
+
+// Court availability API hook
+export const useCourtAvailability = (
+  courtId: number,
+  date: string,
+  options?: UseQueryOptions<AvailabilitySlot[], AxiosError>
+) => {
+  return useQuery({
+    queryKey: ['court-availability', courtId, date],
+    queryFn: async (): Promise<AvailabilitySlot[]> => {
+      const response: AxiosResponse<AvailabilitySlot[]> = await api.get(
+        `/courts/${courtId}/availabilitySlots?date=${date}`
+      );
+      return response.data;
+    },
+    enabled: !!courtId && !!date,
+    staleTime: 1000 * 60 * 5, // 5 minutes
     ...options,
   });
 };
