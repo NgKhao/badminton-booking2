@@ -149,7 +149,7 @@ export const BookingPage: React.FC = () => {
   };
 
   const navigate = useNavigate();
-  
+
   // API mutation hook
   const createBookingMutation = useNewCreateBookingMutation({
     onSuccess: (data) => {
@@ -177,7 +177,7 @@ export const BookingPage: React.FC = () => {
     if (!selectedCourt || !selectedStartTime || !selectedEndTime || !user) return;
 
     setLoading(true);
-    
+
     const bookingData: NewBookingRequest = {
       court: {
         id: selectedCourt.id,

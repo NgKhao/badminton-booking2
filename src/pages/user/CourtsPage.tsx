@@ -270,7 +270,7 @@ export const CourtsPage: React.FC = () => {
                   <CardMedia
                     component="img"
                     height="200"
-                    image={court.images?.[0] || courtImage}
+                    image={`${import.meta.env.VITE_IMG_URL}${court.images?.[0]}` || courtImage}
                     alt={court.courtName}
                     sx={{ height: 192, objectFit: 'cover' }}
                   />
@@ -354,7 +354,9 @@ export const CourtsPage: React.FC = () => {
                 {selectedCourt && (
                   <Box>
                     <img
-                      src={selectedCourt.images?.[0] || courtImage}
+                      src={
+                        `${import.meta.env.VITE_IMG_URL}${selectedCourt.images?.[0]}` || courtImage
+                      }
                       alt={selectedCourt.courtName}
                       style={{
                         width: '100%',
