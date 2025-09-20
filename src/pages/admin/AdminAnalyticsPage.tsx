@@ -9,25 +9,9 @@ import {
   Select,
   MenuItem,
   Button,
-  Chip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Avatar,
   useTheme,
 } from '@mui/material';
-import {
-  TrendingUp,
-  TrendingDown,
-  AttachMoney,
-  EventNote,
-  SportsTennis,
-  GetApp,
-  Refresh,
-} from '@mui/icons-material';
+import { AttachMoney, EventNote, SportsTennis, Refresh, PeopleAlt } from '@mui/icons-material';
 import {
   AreaChart,
   Area,
@@ -36,12 +20,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar,
-  Legend,
 } from 'recharts';
 import { format, subDays } from 'date-fns';
 
@@ -66,12 +44,6 @@ interface CustomerData {
   total_spent: number;
   last_booking: string;
   membership_level: 'basic' | 'premium' | 'vip';
-}
-
-interface TimeSlotData {
-  time_slot: string;
-  bookings: number;
-  percentage: number;
 }
 
 // Mock data
@@ -140,36 +112,13 @@ const topCustomersData: CustomerData[] = [
   },
 ];
 
-const timeSlotData: TimeSlotData[] = [
-  { time_slot: '06:00-08:00', bookings: 42, percentage: 12 },
-  { time_slot: '08:00-10:00', bookings: 68, percentage: 19 },
-  { time_slot: '10:00-12:00', bookings: 55, percentage: 16 },
-  { time_slot: '12:00-14:00', bookings: 34, percentage: 10 },
-  { time_slot: '14:00-16:00', bookings: 48, percentage: 14 },
-  { time_slot: '16:00-18:00', bookings: 72, percentage: 20 },
-  { time_slot: '18:00-20:00', bookings: 61, percentage: 17 },
-  { time_slot: '20:00-22:00', bookings: 38, percentage: 11 },
-];
-
-const COLORS = [
-  '#0088FE',
-  '#00C49F',
-  '#FFBB28',
-  '#FF8042',
-  '#8884D8',
-  '#82CA9D',
-  '#FFC658',
-  '#FF7C7C',
-];
-
 export const AdminAnalyticsPage: React.FC = () => {
   const theme = useTheme();
-  const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
-  const [chartType, setChartType] = useState<'revenue' | 'bookings'>('revenue');
+  const [timeRange, setTimeRange] = useState<'today' | 'thisMonth'>('thisMonth');
 
   // Generate data based on time range
   const revenueData = useMemo(() => {
-    const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
+    const days = timeRange === 'today' ? 1 : 30; // Hôm nay = 1 ngày, Tháng này = 30 ngày
     return generateRevenueData(days);
   }, [timeRange]);
 
@@ -177,7 +126,7 @@ export const AdminAnalyticsPage: React.FC = () => {
   const summaryStats = useMemo(() => {
     const totalRevenue = revenueData.reduce((sum, item) => sum + item.revenue, 0);
     const totalBookings = revenueData.reduce((sum, item) => sum + item.bookings, 0);
-    const avgBookingValue = totalRevenue / totalBookings;
+    const newCustomers = Math.floor(Math.random() * 50) + 10; // Mock data cho khách hàng mới
     const totalCourts = courtUsageData.length;
     const avgUtilization =
       courtUsageData.reduce((sum, court) => sum + court.utilization, 0) / totalCourts;
@@ -191,7 +140,7 @@ export const AdminAnalyticsPage: React.FC = () => {
     return {
       totalRevenue,
       totalBookings,
-      avgBookingValue,
+      newCustomers,
       totalCustomers: topCustomersData.length * 8, // Mock multiplier
       avgUtilization,
       revenueGrowth,
@@ -203,24 +152,6 @@ export const AdminAnalyticsPage: React.FC = () => {
       style: 'currency',
       currency: 'VND',
     }).format(amount);
-  };
-
-  const getMembershipColor = (level: string) => {
-    switch (level) {
-      case 'vip':
-        return 'warning';
-      case 'premium':
-        return 'info';
-      case 'basic':
-        return 'default';
-      default:
-        return 'default';
-    }
-  };
-
-  const handleExportReport = () => {
-    // TODO: Implement export functionality
-    console.log('Exporting report...');
   };
 
   return (
@@ -239,28 +170,15 @@ export const AdminAnalyticsPage: React.FC = () => {
       <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', mb: 3 }}>
         <Box sx={{ p: 3 }}>
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-            <FormControl size="small" sx={{ minWidth: 120 }}>
+            <FormControl size="small" sx={{ minWidth: 150 }}>
               <InputLabel>Khoảng thời gian</InputLabel>
               <Select
                 value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value as '7d' | '30d' | '90d')}
+                onChange={(e) => setTimeRange(e.target.value as 'today' | 'thisMonth')}
                 label="Khoảng thời gian"
               >
-                <MenuItem value="7d">7 ngày</MenuItem>
-                <MenuItem value="30d">30 ngày</MenuItem>
-                <MenuItem value="90d">90 ngày</MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>Loại biểu đồ</InputLabel>
-              <Select
-                value={chartType}
-                onChange={(e) => setChartType(e.target.value as 'revenue' | 'bookings')}
-                label="Loại biểu đồ"
-              >
-                <MenuItem value="revenue">Doanh thu</MenuItem>
-                <MenuItem value="bookings">Lượt đặt</MenuItem>
+                <MenuItem value="today">Hôm nay</MenuItem>
+                <MenuItem value="thisMonth">Tháng này</MenuItem>
               </Select>
             </FormControl>
 
@@ -268,17 +186,10 @@ export const AdminAnalyticsPage: React.FC = () => {
               variant="outlined"
               startIcon={<Refresh />}
               onClick={() => {
-                setTimeRange('30d');
-                setChartType('revenue');
+                setTimeRange('thisMonth');
               }}
             >
               Làm mới
-            </Button>
-
-            <Box sx={{ flexGrow: 1 }} />
-
-            <Button variant="contained" startIcon={<GetApp />} onClick={handleExportReport}>
-              Xuất báo cáo
             </Button>
           </Box>
         </Box>
@@ -303,22 +214,6 @@ export const AdminAnalyticsPage: React.FC = () => {
                 <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
                   {formatCurrency(summaryStats.totalRevenue)}
                 </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  {summaryStats.revenueGrowth >= 0 ? (
-                    <TrendingUp sx={{ fontSize: 16, color: 'success.main', mr: 0.5 }} />
-                  ) : (
-                    <TrendingDown sx={{ fontSize: 16, color: 'error.main', mr: 0.5 }} />
-                  )}
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: summaryStats.revenueGrowth >= 0 ? 'success.main' : 'error.main',
-                      fontWeight: 'medium',
-                    }}
-                  >
-                    {Math.abs(summaryStats.revenueGrowth).toFixed(1)}%
-                  </Typography>
-                </Box>
               </Box>
               <AttachMoney sx={{ fontSize: 40, color: 'success.main' }} />
             </Box>
@@ -346,13 +241,13 @@ export const AdminAnalyticsPage: React.FC = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  Giá trị TB/đơn
+                  Khách hàng mới
                 </Typography>
                 <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-                  {formatCurrency(summaryStats.avgBookingValue)}
+                  {summaryStats.newCustomers}
                 </Typography>
               </Box>
-              <TrendingUp sx={{ fontSize: 40, color: 'info.main' }} />
+              <PeopleAlt sx={{ fontSize: 40, color: 'info.main' }} />
             </Box>
           </CardContent>
         </Card>
@@ -362,7 +257,7 @@ export const AdminAnalyticsPage: React.FC = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  Tỷ lệ sử dụng sân
+                  Lượt đặt đã xác nhận
                 </Typography>
                 <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
                   {summaryStats.avgUtilization.toFixed(1)}%
@@ -375,14 +270,12 @@ export const AdminAnalyticsPage: React.FC = () => {
       </Box>
 
       {/* Charts Section */}
-      <Box
-        sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '2fr 1fr' }, gap: 3, mb: 4 }}
-      >
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr' }, gap: 3, mb: 4 }}>
         {/* Revenue/Bookings Trend */}
         <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
           <Box sx={{ p: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
             <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-              {chartType === 'revenue' ? 'Xu hướng doanh thu' : 'Xu hướng lượt đặt sân'}
+              Xu hướng doanh thu
             </Typography>
           </Box>
           <Box sx={{ p: 3 }}>
@@ -391,15 +284,10 @@ export const AdminAnalyticsPage: React.FC = () => {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" />
                 <YAxis />
-                <Tooltip
-                  formatter={(value: number) => [
-                    chartType === 'revenue' ? formatCurrency(value) : value,
-                    chartType === 'revenue' ? 'Doanh thu' : 'Lượt đặt',
-                  ]}
-                />
+                <Tooltip formatter={(value: number) => [formatCurrency(value), 'Doanh thu']} />
                 <Area
                   type="monotone"
-                  dataKey={chartType}
+                  dataKey="revenue"
                   stroke={theme.palette.primary.main}
                   fill={theme.palette.primary.light}
                   fillOpacity={0.6}
@@ -407,213 +295,6 @@ export const AdminAnalyticsPage: React.FC = () => {
               </AreaChart>
             </ResponsiveContainer>
           </Box>
-        </Card>
-
-        {/* Time Slot Usage */}
-        <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
-          <Box sx={{ p: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
-            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-              Khung giờ phổ biến
-            </Typography>
-          </Box>
-          <Box sx={{ p: 3 }}>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={timeSlotData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={120}
-                  paddingAngle={5}
-                  dataKey="percentage"
-                >
-                  {timeSlotData.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value: number) => [`${value}%`, 'Tỷ lệ']} />
-              </PieChart>
-            </ResponsiveContainer>
-          </Box>
-        </Card>
-      </Box>
-
-      {/* Court Usage Chart */}
-      <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', mb: 4 }}>
-        <Box sx={{ p: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
-          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-            Hiệu suất sử dụng sân
-          </Typography>
-        </Box>
-        <Box sx={{ p: 3 }}>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={courtUsageData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="court_name" />
-              <YAxis yAxisId="left" />
-              <YAxis yAxisId="right" orientation="right" />
-              <Tooltip
-                formatter={(value: number, name: string) => [
-                  name === 'revenue'
-                    ? formatCurrency(value)
-                    : name === 'bookings'
-                      ? value
-                      : 'Tỷ lệ sử dụng (%)',
-                  name === 'revenue'
-                    ? 'Doanh thu'
-                    : name === 'bookings'
-                      ? 'Lượt đặt'
-                      : 'Tỷ lệ sử dụng (%)',
-                ]}
-              />
-              <Legend />
-              <Bar
-                yAxisId="left"
-                dataKey="bookings"
-                fill={theme.palette.primary.main}
-                name="bookings"
-              />
-              <Bar
-                yAxisId="right"
-                dataKey="utilization"
-                fill={theme.palette.warning.main}
-                name="utilization"
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </Box>
-      </Card>
-
-      {/* Tables Section */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' }, gap: 3 }}>
-        {/* Top Customers */}
-        <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
-          <Box sx={{ p: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
-            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-              Khách hàng VIP
-            </Typography>
-          </Box>
-          <TableContainer>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Khách hàng</TableCell>
-                  <TableCell align="right">Lượt đặt</TableCell>
-                  <TableCell align="right">Tổng chi</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {topCustomersData.map((customer) => (
-                  <TableRow key={customer.customer_id}>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Avatar sx={{ width: 32, height: 32, fontSize: '0.875rem' }}>
-                          {customer.full_name.charAt(0)}
-                        </Avatar>
-                        <Box>
-                          <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                            {customer.full_name}
-                          </Typography>
-                          <Chip
-                            label={customer.membership_level.toUpperCase()}
-                            size="small"
-                            color={
-                              getMembershipColor(customer.membership_level) as
-                                | 'warning'
-                                | 'info'
-                                | 'default'
-                            }
-                            variant="outlined"
-                          />
-                        </Box>
-                      </Box>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                        {customer.total_bookings}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                        {formatCurrency(customer.total_spent)}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Card>
-
-        {/* Court Performance */}
-        <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
-          <Box sx={{ p: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
-            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-              Hiệu suất sân
-            </Typography>
-          </Box>
-          <TableContainer>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Tên sân</TableCell>
-                  <TableCell align="right">Lượt đặt</TableCell>
-                  <TableCell align="right">Tỷ lệ sử dụng</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {courtUsageData.map((court) => (
-                  <TableRow key={court.court_name}>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                        {court.court_name}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography variant="body2">{court.bookings}</Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'flex-end',
-                          gap: 1,
-                        }}
-                      >
-                        <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                          {court.utilization}%
-                        </Typography>
-                        <Box
-                          sx={{
-                            width: 40,
-                            height: 6,
-                            bgcolor: 'grey.200',
-                            borderRadius: 3,
-                            overflow: 'hidden',
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              width: `${court.utilization}%`,
-                              height: '100%',
-                              bgcolor:
-                                court.utilization >= 80
-                                  ? 'success.main'
-                                  : court.utilization >= 60
-                                    ? 'warning.main'
-                                    : 'error.main',
-                            }}
-                          />
-                        </Box>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
         </Card>
       </Box>
     </Box>
