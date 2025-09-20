@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -20,6 +20,7 @@ import {
   Alert,
   Snackbar,
   CircularProgress,
+  Pagination,
 } from '@mui/material';
 import {
   FilterList,
@@ -36,8 +37,15 @@ import { useCourts } from '../../hooks/useApi';
 import courtImage from '../../assets/court.jpg';
 
 export const CourtsPage: React.FC = () => {
-  // React Query hook for fetching courts
-  const { data: courts = [], isLoading, error, refetch } = useCourts();
+  // Pagination state
+  const [page, setPage] = useState(1); // Material-UI Pagination uses 1-based indexing
+  const [pageSize] = useState(6);
+
+  // React Query hook for fetching courts with pagination
+  const { data, isLoading, error, refetch } = useCourts({ page: page - 1, size: pageSize });
+
+  const courts = useMemo(() => data?.courts || [], [data]);
+  const pagination = data?.pagination;
 
   const [filteredCourts, setFilteredCourts] = useState<Court[]>([]);
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
@@ -98,6 +106,13 @@ export const CourtsPage: React.FC = () => {
 
   const handleFilterChange = (field: string, value: string) => {
     setFilters((prev) => ({ ...prev, [field]: value }));
+    setPage(1); // Reset to first page when filter changes
+  };
+
+  const handlePageChange = (_event: React.ChangeEvent<unknown>, newPage: number) => {
+    setPage(newPage);
+    // Scroll to top when page changes
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const getStatusColor = (status: string): 'success' | 'warning' | 'error' | 'default' => {
@@ -330,6 +345,21 @@ export const CourtsPage: React.FC = () => {
                 </Card>
               ))}
             </Box>
+
+            {/* Pagination */}
+            {pagination && pagination.totalPages > 1 && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                <Pagination
+                  count={pagination.totalPages}
+                  page={page}
+                  onChange={handlePageChange}
+                  color="primary"
+                  size="large"
+                  showFirstButton
+                  showLastButton
+                />
+              </Box>
+            )}
 
             {/* Court Detail Dialog */}
             <Dialog

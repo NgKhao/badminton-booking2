@@ -248,14 +248,34 @@ export interface CourtDetailResponse {
 }
 
 /**
- * Hook để lấy danh sách courts (user - chỉ active courts)
+ * Hook để lấy danh sách courts (user - chỉ active courts) với pagination
  */
-export const useCourts = (options?: UseQueryOptions<Court[], AxiosError>) => {
+export const useCourts = (
+  params?: PaginationParams,
+  options?: UseQueryOptions<{ courts: Court[]; pagination: PaginationInfo }, AxiosError>
+) => {
   return useQuery({
-    queryKey: ['courts'],
-    queryFn: async (): Promise<Court[]> => {
-      const response: AxiosResponse<CourtsResponse> = await api.get('/courts');
-      return response.data.detail.content;
+    queryKey: ['courts', params],
+    queryFn: async (): Promise<{ courts: Court[]; pagination: PaginationInfo }> => {
+      const searchParams = new URLSearchParams();
+      if (params?.page !== undefined) searchParams.append('page', params.page.toString());
+      if (params?.size !== undefined) searchParams.append('size', params.size.toString());
+
+      const response: AxiosResponse<CourtsResponse> = await api.get(
+        `/courts${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
+      );
+
+      return {
+        courts: response.data.detail.content,
+        pagination: {
+          pageNumber: response.data.detail.pageNumber,
+          pageSize: response.data.detail.pageSize,
+          totalElements: response.data.detail.totalElements,
+          totalPages: response.data.detail.totalPages,
+          first: response.data.detail.first,
+          last: response.data.detail.last,
+        },
+      };
     },
     ...options,
   });
