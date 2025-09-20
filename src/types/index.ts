@@ -135,3 +135,37 @@ export interface CourtAvailabilityParams {
   courtId: number;
   date: string; // Format: "YYYY-MM-DD"
 }
+
+// New Booking API types
+export interface BookingCustomer {
+  customerId: number;
+  numberPhone: string;
+  email: string;
+  fullname: string;
+}
+
+export interface NewBookingRequest {
+  court: {
+    id: number;
+  };
+  bookingDate: string; // Format: "YYYY-MM-DD"
+  startTime: string; // Format: "HH:mm"
+  endTime: string; // Format: "HH:mm"
+}
+
+export interface NewBookingResponse {
+  id: number;
+  bookingCode: string;
+  court: Court;
+  customer: BookingCustomer;
+  bookingDate: string;
+  startTime: string; // Format: "HH:mm:ss"
+  endTime: string; // Format: "HH:mm:ss"
+  duration: number;
+  status: string;
+  totalAmount: number;
+  paymentStatus: string;
+  paymentMethod: string | null;
+  createdAt: string;
+  updatedAt: string | null;
+}

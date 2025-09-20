@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Box,
   Paper,
@@ -23,6 +23,7 @@ import {
   Tooltip,
   CircularProgress,
   Skeleton,
+  Snackbar,
 } from '@mui/material';
 
 import {
@@ -53,8 +54,8 @@ import {
   isWithinInterval,
 } from 'date-fns';
 import { useAuthStore } from '../../store/authStore';
-import { useCourtAvailability } from '../../hooks/useApi';
-import type { Court } from '../../types';
+import { useCourtAvailability, useNewCreateBookingMutation } from '../../hooks/useApi';
+import type { Court, NewBookingRequest } from '../../types';
 
 const steps = ['Chọn thời gian', 'Xác nhận', 'Hoàn thành'];
 
@@ -69,6 +70,11 @@ export const BookingPage: React.FC = () => {
   const [selectedStartTime, setSelectedStartTime] = useState<Date | null>(null);
   const [selectedEndTime, setSelectedEndTime] = useState<Date | null>(null);
   const [loading, setLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error';
+  }>({ open: false, message: '', severity: 'success' });
 
   const { user } = useAuthStore();
 
@@ -142,18 +148,46 @@ export const BookingPage: React.FC = () => {
     }
   };
 
+  const navigate = useNavigate();
+  
+  // API mutation hook
+  const createBookingMutation = useNewCreateBookingMutation({
+    onSuccess: (data) => {
+      setSnackbar({
+        open: true,
+        message: `Đặt sân thành công! Mã đặt: ${data.bookingCode}`,
+        severity: 'success',
+      });
+      setActiveStep(2);
+    },
+    onError: (error) => {
+      console.error('Booking error:', error);
+      setSnackbar({
+        open: true,
+        message: 'Có lỗi xảy ra khi đặt sân. Vui lòng thử lại!',
+        severity: 'error',
+      });
+    },
+    onSettled: () => {
+      setLoading(false);
+    },
+  });
+
   const handleBookingConfirm = async () => {
-    if (!selectedCourt || !selectedStartTime || !user) return;
+    if (!selectedCourt || !selectedStartTime || !selectedEndTime || !user) return;
 
     setLoading(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      setActiveStep(2);
-    } catch (error) {
-      console.error('Booking error:', error);
-    } finally {
-      setLoading(false);
-    }
+    
+    const bookingData: NewBookingRequest = {
+      court: {
+        id: selectedCourt.id,
+      },
+      bookingDate: format(selectedDate, 'yyyy-MM-dd'),
+      startTime: format(selectedStartTime, 'HH:mm'),
+      endTime: format(selectedEndTime, 'HH:mm'),
+    };
+
+    createBookingMutation.mutate(bookingData);
   };
 
   const renderTimeSelection = () => (
@@ -520,6 +554,22 @@ export const BookingPage: React.FC = () => {
       {activeStep === 0 && renderTimeSelection()}
       {activeStep === 1 && renderConfirmation()}
       {activeStep === 2 && renderSuccess()}
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+          severity={snackbar.severity}
+          className="w-full"
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

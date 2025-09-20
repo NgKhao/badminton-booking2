@@ -12,7 +12,7 @@ import {
   type RegisterResponse as AuthRegisterResponse,
 } from '../services/authService';
 import type { AxiosResponse, AxiosError } from 'axios';
-import type { AvailabilitySlot } from '../types';
+import type { AvailabilitySlot, NewBookingRequest, NewBookingResponse } from '../types';
 
 // ================== AUTH API HOOKS ==================
 
@@ -532,6 +532,26 @@ export const useCancelBookingMutation = (
       const response: AxiosResponse<{ detail: Booking }> = await api.patch(
         `/bookings/${bookingId}/cancel`
       );
+      return response.data.detail;
+    },
+    ...options,
+  });
+};
+
+/**
+ * Hook để tạo booking mới với API format mới
+ */
+export const useNewCreateBookingMutation = (
+  options?: UseMutationOptions<NewBookingResponse, AxiosError, NewBookingRequest>
+) => {
+  return useMutation({
+    mutationFn: async (bookingData: NewBookingRequest): Promise<NewBookingResponse> => {
+      const response: AxiosResponse<{
+        messenger: string;
+        status: number;
+        detail: NewBookingResponse;
+        instance: string;
+      }> = await api.post('/bookings', bookingData);
       return response.data.detail;
     },
     ...options,
