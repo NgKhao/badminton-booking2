@@ -146,24 +146,6 @@ export const Navbar: React.FC<NavbarProps> = () => {
                 sx={{ mt: 1 }}
               >
                 <MenuItem
-                  onClick={handleClose}
-                  sx={{ display: 'flex', alignItems: 'center' }}
-                  component={Link}
-                  to="/profile"
-                >
-                  <Person sx={{ mr: 1 }} fontSize="small" />
-                  Thông tin cá nhân
-                </MenuItem>
-                <MenuItem
-                  onClick={handleClose}
-                  sx={{ display: 'flex', alignItems: 'center' }}
-                  component={Link}
-                  to="/bookings"
-                >
-                  <History sx={{ mr: 1 }} fontSize="small" />
-                  Lịch sử đặt sân
-                </MenuItem>
-                <MenuItem
                   onClick={handleLogout}
                   sx={{ display: 'flex', alignItems: 'center', color: 'error.main' }}
                 >

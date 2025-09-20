@@ -12,8 +12,6 @@ import { Navbar } from './components/Navbar';
 import { HomePage } from './pages/user/HomePage';
 import { AuthPage } from './pages/user/AuthPage';
 import { BookingPage } from './pages/user/BookingPage';
-import { BookingHistoryPage } from './pages/user/BookingHistoryPage';
-import { ProfilePage } from './pages/user/UserProfilePage';
 import { CourtsPage } from './pages/user/CourtsPage';
 
 // Admin Pages
@@ -115,22 +113,6 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <BookingPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/bookings"
-                  element={
-                    <ProtectedRoute>
-                      <BookingHistoryPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/profile"
-                  element={
-                    <ProtectedRoute>
-                      <ProfilePage />
                     </ProtectedRoute>
                   }
                 />
