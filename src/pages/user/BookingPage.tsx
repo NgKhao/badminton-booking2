@@ -77,18 +77,12 @@ const mockExistingBookings = [
   },
 ];
 
-// Peak hours configuration
-const peakHours = [
-  { start: 17, end: 21, label: 'Giờ cao điểm', multiplier: 1.2 },
-  { start: 6, end: 8, label: 'Giờ sáng sớm', multiplier: 0.9 },
-];
-
 export const BookingPage: React.FC = () => {
   const location = useLocation();
   const { selectedCourt: initialSelectedCourt } =
     (location.state as { selectedCourt?: Court }) || {};
 
-  const [activeStep, setActiveStep] = useState(0); // Luôn bắt đầu từ step chọn thời gian
+  const [activeStep, setActiveStep] = useState(0);
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(initialSelectedCourt || null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedStartTime, setSelectedStartTime] = useState<Date | null>(null);
@@ -143,38 +137,13 @@ export const BookingPage: React.FC = () => {
     return slots;
   }, [selectedDate]);
 
-  // Calculate total amount with peak hour pricing
+  // Calculate total amount (removed peak hour pricing)
   const calculateTotalAmount = (): number => {
     if (!selectedCourt || !selectedStartTime || !selectedEndTime) return 0;
 
     const durationInMinutes = differenceInMinutes(selectedEndTime, selectedStartTime);
     const durationInHours = durationInMinutes / 60;
-    const baseAmount = selectedCourt.hourlyRate * durationInHours;
-    const hour = selectedStartTime.getHours();
-
-    const peakHour = peakHours.find((peak) => hour >= peak.start && hour < peak.end);
-    const multiplier = peakHour ? peakHour.multiplier : 1;
-
-    return Math.round(baseAmount * multiplier);
-  };
-
-  // Get pricing info for time slot
-  const getPricingInfo = (timeSlot: { start: Date; end: Date }) => {
-    if (!selectedCourt) return null;
-
-    const hour = timeSlot.start.getHours();
-    const durationInMinutes = differenceInMinutes(timeSlot.end, timeSlot.start);
-    const durationInHours = durationInMinutes / 60;
-    const peakHour = peakHours.find((peak) => hour >= peak.start && hour < peak.end);
-
-    return {
-      basePrice: selectedCourt.hourlyRate,
-      multiplier: peakHour ? peakHour.multiplier : 1,
-      label: peakHour ? peakHour.label : 'Giờ thường',
-      totalPrice: Math.round(
-        selectedCourt.hourlyRate * durationInHours * (peakHour ? peakHour.multiplier : 1)
-      ),
-    };
+    return Math.round(selectedCourt.hourlyRate * durationInHours);
   };
 
   const handleCourtSelect = (court: Court) => {
@@ -185,7 +154,7 @@ export const BookingPage: React.FC = () => {
 
   const handleTimeConfirm = () => {
     if (selectedStartTime && selectedEndTime) {
-      setActiveStep(1); // Chuyển tới confirmation step
+      setActiveStep(1);
     }
   };
 
@@ -194,9 +163,8 @@ export const BookingPage: React.FC = () => {
 
     setLoading(true);
     try {
-      // Simulate booking API call
       await new Promise((resolve) => setTimeout(resolve, 2000));
-      setActiveStep(2); // Chuyển tới success step
+      setActiveStep(2);
     } catch (error) {
       console.error('Booking error:', error);
     } finally {
@@ -205,218 +173,196 @@ export const BookingPage: React.FC = () => {
   };
 
   const renderTimeSelection = () => (
-    <Container maxWidth="lg" className="py-6">
-      <div className="mb-8">
-        <Typography variant="h4" className="text-center mb-6 font-bold text-gray-800">
-          Chọn thời gian
-        </Typography>
+    <Container maxWidth="lg" className="py-8">
+      <Typography variant="h4" className="text-center mb-8 font-bold text-gray-800">
+        Chọn thời gian
+      </Typography>
 
-        {/* Selected Court Info */}
-        {selectedCourt && (
-          <Paper elevation={1} className="p-4 mb-6">
-            <div className="flex items-center gap-4">
-              <Avatar className="bg-emerald-600">
-                <SportsTennis />
-              </Avatar>
-              <div>
-                <Typography variant="h6" className="font-semibold">
-                  {selectedCourt.courtName}
-                </Typography>
-                <Typography variant="body2" className="text-gray-600">
-                  {selectedCourt.courtType === 'INDOOR' ? 'Trong nhà' : 'Ngoài trời'} -{' '}
-                  {selectedCourt.hourlyRate.toLocaleString('vi-VN')}
-                  đ/giờ
-                </Typography>
-              </div>
-            </div>
-          </Paper>
-        )}
-
-        <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={vi}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Date Selection */}
-            <div className="space-y-6">
-              <Paper elevation={2} className="p-6">
-                <Typography variant="h6" className="mb-4 flex items-center">
-                  <CalendarToday className="mr-2 text-emerald-600" />
-                  Chọn ngày
-                </Typography>
-
-                <DatePicker
-                  label="Ngày đặt sân"
-                  value={selectedDate}
-                  onChange={(newValue) => {
-                    if (newValue) {
-                      setSelectedDate(newValue);
-                      setSelectedStartTime(null);
-                      setSelectedEndTime(null);
-                    }
-                  }}
-                  minDate={new Date()}
-                  maxDate={addHours(new Date(), 24 * 30)} // 30 days ahead
-                  className="w-full"
-                />
-              </Paper>
-
-              {/* Time Grid Selection */}
-              <Paper elevation={2} className="p-6">
-                <Typography variant="h6" className="mb-4 flex items-center">
-                  <Schedule className="mr-2 text-blue-600" />
-                  Chọn khung giờ (30 phút/khung)
-                </Typography>
-
-                <div className="grid grid-cols-4 gap-2 max-h-96 overflow-y-auto">
-                  {getAllTimeSlots.map((slot, index) => {
-                    const isAvailable = selectedCourt
-                      ? isSlotAvailable(selectedCourt.id, selectedDate, slot)
-                      : false;
-                    const isSelected =
-                      selectedStartTime &&
-                      selectedEndTime &&
-                      slot >= selectedStartTime &&
-                      slot < selectedEndTime;
-                    const isStartTime =
-                      selectedStartTime && slot.getTime() === selectedStartTime.getTime();
-                    const isEndTimeSlot =
-                      selectedEndTime &&
-                      slot.getTime() === selectedEndTime.getTime() - 30 * 60 * 1000; // 30 minutes before end
-
-                    const hour = slot.getHours();
-                    const isPeakHour = peakHours.some(
-                      (peak) => hour >= peak.start && hour < peak.end
-                    );
-
-                    return (
-                      <Tooltip
-                        key={index}
-                        title={
-                          !isAvailable
-                            ? 'Đã có người đặt'
-                            : isPeakHour
-                              ? 'Giờ cao điểm'
-                              : 'Khung giờ trống'
-                        }
-                        arrow
-                      >
-                        <div
-                          className={`
-                            p-2 text-center rounded-lg cursor-pointer text-xs font-medium transition-all
-                            ${
-                              !isAvailable
-                                ? 'bg-red-100 text-red-700 cursor-not-allowed'
-                                : isSelected
-                                  ? 'bg-emerald-500 text-white'
-                                  : isStartTime
-                                    ? 'bg-emerald-600 text-white ring-2 ring-emerald-300'
-                                    : isEndTimeSlot
-                                      ? 'bg-emerald-400 text-white ring-2 ring-emerald-300'
-                                      : isPeakHour
-                                        ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }
-                          `}
-                          onClick={() => {
-                            if (!isAvailable || !selectedCourt) return;
-
-                            if (!selectedStartTime) {
-                              // Select start time
-                              setSelectedStartTime(slot);
-                              setSelectedEndTime(null);
-                            } else if (!selectedEndTime) {
-                              // Select end time
-                              if (slot > selectedStartTime) {
-                                setSelectedEndTime(addMinutes(slot, 30));
-                              } else {
-                                // Reset if selecting earlier time
-                                setSelectedStartTime(slot);
-                                setSelectedEndTime(null);
-                              }
-                            } else {
-                              // Reset selection
-                              setSelectedStartTime(slot);
-                              setSelectedEndTime(null);
-                            }
-                          }}
-                        >
-                          <div>{format(slot, 'HH:mm')}</div>
-                          {!isAvailable && <div className="text-[10px] mt-1">Đã đặt</div>}
-                          {isPeakHour && isAvailable && (
-                            <div className="text-[10px] mt-1">x1.2</div>
-                          )}
-                        </div>
-                      </Tooltip>
-                    );
-                  })}
-                </div>
-
-                {/* Selection Summary */}
-                {selectedStartTime && selectedEndTime && (
-                  <div className="mt-4 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <Typography variant="body2" className="text-gray-600">
-                          Thời gian đã chọn
-                        </Typography>
-                        <Typography variant="h6" className="font-semibold text-emerald-600">
-                          {format(selectedStartTime, 'HH:mm')} - {format(selectedEndTime, 'HH:mm')}
-                        </Typography>
-                        <Typography variant="caption" className="text-gray-500">
-                          (
-                          {Math.round(
-                            (differenceInMinutes(selectedEndTime, selectedStartTime) / 60) * 10
-                          ) / 10}{' '}
-                          giờ)
-                        </Typography>
-                      </div>
-                      <div className="text-right">
-                        <Typography variant="body2" className="text-gray-600">
-                          Tổng tiền
-                        </Typography>
-                        <Typography variant="h6" className="font-bold text-emerald-600">
-                          {calculateTotalAmount().toLocaleString('vi-VN')}đ
-                        </Typography>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Instructions */}
-                <Alert severity="info" className="mt-4">
-                  <Typography variant="body2">
-                    <strong>Hướng dẫn:</strong> Nhấn vào khung giờ đầu tiên để chọn giờ bắt đầu, sau
-                    đó nhấn vào khung giờ thứ hai để chọn giờ kết thúc.
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Court Info and Date Selection */}
+        <div className="lg:col-span-1 space-y-6">
+          {/* Selected Court Info */}
+          {selectedCourt && (
+            <Paper elevation={2} className="p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <Avatar className="bg-emerald-600">
+                  <SportsTennis />
+                </Avatar>
+                <div>
+                  <Typography variant="h6" className="font-semibold">
+                    {selectedCourt.courtName}
                   </Typography>
-                </Alert>
-              </Paper>
-            </div>
-          </div>
-        </LocalizationProvider>
+                  <Typography variant="body2" className="text-gray-600">
+                    {selectedCourt.courtType === 'INDOOR' ? 'Trong nhà' : 'Ngoài trời'} -{' '}
+                    {selectedCourt.hourlyRate.toLocaleString('vi-VN')}đ/giờ
+                  </Typography>
+                </div>
+              </div>
+            </Paper>
+          )}
 
-        {/* Navigation Buttons */}
-        <div className="flex justify-between mt-6">
-          <Button
-            variant="outlined"
-            onClick={() => window.history.back()}
-            className="border-gray-300 text-gray-700"
-          >
-            Quay lại chọn sân
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleTimeConfirm}
-            disabled={
-              !selectedStartTime ||
-              !selectedEndTime ||
-              (!!selectedCourt &&
-                !!selectedStartTime &&
-                !!selectedEndTime &&
-                hasConflict(selectedCourt.id, selectedDate, selectedStartTime, selectedEndTime))
-            }
-            className="bg-emerald-600 hover:bg-emerald-700"
-          >
-            Tiếp tục
-          </Button>
+          {/* Date Selection */}
+          <Paper elevation={2} className="p-6">
+            <Typography variant="h6" className="mb-4 flex items-center">
+              <CalendarToday className="mr-2 text-emerald-600" />
+              Chọn ngày
+            </Typography>
+            <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={vi}>
+              <DatePicker
+                label="Ngày đặt sân"
+                value={selectedDate}
+                onChange={(newValue) => {
+                  if (newValue) {
+                    setSelectedDate(newValue);
+                    setSelectedStartTime(null);
+                    setSelectedEndTime(null);
+                  }
+                }}
+                minDate={new Date()}
+                maxDate={addHours(new Date(), 24 * 30)}
+                className="w-full"
+              />
+            </LocalizationProvider>
+          </Paper>
         </div>
+
+        {/* Time Selection and Summary */}
+        <div className="lg:col-span-2">
+          <Paper elevation={2} className="p-6">
+            <Typography variant="h6" className="mb-4 flex items-center">
+              <Schedule className="mr-2 text-blue-600" />
+              Chọn khung giờ (30 phút/khung)
+            </Typography>
+
+            <div className="grid grid-cols-3 gap-2 max-h-[400px] overflow-y-auto p-2">
+              {getAllTimeSlots.map((slot, index) => {
+                const isAvailable = selectedCourt
+                  ? isSlotAvailable(selectedCourt.id, selectedDate, slot)
+                  : false;
+                const isSelected =
+                  selectedStartTime &&
+                  selectedEndTime &&
+                  slot >= selectedStartTime &&
+                  slot < selectedEndTime;
+                const isStartTime =
+                  selectedStartTime && slot.getTime() === selectedStartTime.getTime();
+                const isEndTimeSlot =
+                  selectedEndTime && slot.getTime() === selectedEndTime.getTime() - 30 * 60 * 1000;
+
+                return (
+                  <Tooltip
+                    key={index}
+                    title={!isAvailable ? 'Đã có người đặt' : 'Khung giờ trống'}
+                    arrow
+                  >
+                    <div
+                      className={`
+                        p-2 text-center rounded-lg cursor-pointer text-xs font-medium transition-all
+                        ${
+                          !isAvailable
+                            ? 'bg-red-100 text-red-700 cursor-not-allowed'
+                            : isSelected
+                              ? 'bg-emerald-500 text-white'
+                              : isStartTime
+                                ? 'bg-emerald-600 text-white ring-2 ring-emerald-300'
+                                : isEndTimeSlot
+                                  ? 'bg-emerald-400 text-white ring-2 ring-emerald-300'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }
+                      `}
+                      onClick={() => {
+                        if (!isAvailable || !selectedCourt) return;
+
+                        if (!selectedStartTime) {
+                          setSelectedStartTime(slot);
+                          setSelectedEndTime(null);
+                        } else if (!selectedEndTime) {
+                          if (slot > selectedStartTime) {
+                            setSelectedEndTime(addMinutes(slot, 30));
+                          } else {
+                            setSelectedStartTime(slot);
+                            setSelectedEndTime(null);
+                          }
+                        } else {
+                          setSelectedStartTime(slot);
+                          setSelectedEndTime(null);
+                        }
+                      }}
+                    >
+                      <div>{format(slot, 'HH:mm')}</div>
+                      {!isAvailable && <div className="text-[10px] mt-1">Đã đặt</div>}
+                    </div>
+                  </Tooltip>
+                );
+              })}
+            </div>
+
+            {/* Selection Summary */}
+            {selectedStartTime && selectedEndTime && (
+              <div className="mt-6 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Typography variant="body2" className="text-gray-600">
+                      Thời gian đã chọn
+                    </Typography>
+                    <Typography variant="h6" className="font-semibold text-emerald-600">
+                      {format(selectedStartTime, 'HH:mm')} - {format(selectedEndTime, 'HH:mm')}
+                    </Typography>
+                    <Typography variant="caption" className="text-gray-500">
+                      (
+                      {Math.round(
+                        (differenceInMinutes(selectedEndTime, selectedStartTime) / 60) * 10
+                      ) / 10}{' '}
+                      giờ)
+                    </Typography>
+                  </div>
+                  <div className="text-right">
+                    <Typography variant="body2" className="text-gray-600">
+                      Tổng tiền
+                    </Typography>
+                    <Typography variant="h6" className="font-bold text-emerald-600">
+                      {calculateTotalAmount().toLocaleString('vi-VN')}đ
+                    </Typography>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Instructions */}
+            <Alert severity="info" className="mt-4">
+              <Typography variant="body2">
+                <strong>Hướng dẫn:</strong> Nhấn vào khung giờ đầu tiên để chọn giờ bắt đầu, sau đó
+                nhấn vào khung giờ thứ hai để chọn giờ kết thúc.
+              </Typography>
+            </Alert>
+          </Paper>
+        </div>
+      </div>
+
+      {/* Navigation Buttons */}
+      <div className="flex justify-between mt-8">
+        <Button
+          variant="outlined"
+          onClick={() => window.history.back()}
+          className="border-gray-300 text-gray-700"
+        >
+          Quay lại chọn sân
+        </Button>
+        <Button
+          variant="contained"
+          onClick={handleTimeConfirm}
+          disabled={
+            !selectedStartTime ||
+            !selectedEndTime ||
+            (!!selectedCourt &&
+              !!selectedStartTime &&
+              !!selectedEndTime &&
+              hasConflict(selectedCourt.id, selectedDate, selectedStartTime, selectedEndTime))
+          }
+          className="bg-emerald-600 hover:bg-emerald-700"
+        >
+          Tiếp tục
+        </Button>
       </div>
     </Container>
   );
@@ -487,23 +433,9 @@ export const BookingPage: React.FC = () => {
                 <Typography variant="subtitle2" className="text-gray-600 font-medium">
                   Tổng tiền
                 </Typography>
-                <div className="flex items-center gap-2">
-                  <Typography variant="h6" className="font-bold text-emerald-600">
-                    {calculateTotalAmount().toLocaleString('vi-VN')}đ
-                  </Typography>
-                  {selectedStartTime &&
-                    selectedEndTime &&
-                    getPricingInfo({ start: selectedStartTime, end: selectedEndTime })
-                      ?.multiplier !== 1 && (
-                      <Chip
-                        label={
-                          getPricingInfo({ start: selectedStartTime, end: selectedEndTime })?.label
-                        }
-                        size="small"
-                        color="warning"
-                      />
-                    )}
-                </div>
+                <Typography variant="h6" className="font-bold text-emerald-600">
+                  {calculateTotalAmount().toLocaleString('vi-VN')}đ
+                </Typography>
               </div>
             </div>
           </div>
@@ -516,37 +448,6 @@ export const BookingPage: React.FC = () => {
             khi đến chơi.
           </div>
         </Alert>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <Paper className="p-4 text-center">
-            <TrendingUp className="text-green-500 mb-2" />
-            <Typography variant="caption" className="text-gray-600">
-              Tiết kiệm thời gian
-            </Typography>
-            <Typography variant="h6" className="font-bold text-green-600">
-              5 phút
-            </Typography>
-          </Paper>
-          <Paper className="p-4 text-center">
-            <AccessTime className="text-blue-500 mb-2" />
-            <Typography variant="caption" className="text-gray-600">
-              Đặt trước
-            </Typography>
-            <Typography variant="h6" className="font-bold text-blue-600">
-              {Math.round(differenceInMinutes(selectedDate, new Date()) / 60)} giờ
-            </Typography>
-          </Paper>
-          <Paper className="p-4 text-center">
-            <CheckCircle className="text-emerald-500 mb-2" />
-            <Typography variant="caption" className="text-gray-600">
-              Không chồng lịch
-            </Typography>
-            <Typography variant="h6" className="font-bold text-emerald-600">
-              ✓ An toàn
-            </Typography>
-          </Paper>
-        </div>
 
         <div className="flex justify-between">
           <Button
@@ -578,7 +479,8 @@ export const BookingPage: React.FC = () => {
           Đặt sân thành công!
         </Typography>
         <Typography variant="body1" className="text-gray-600 mb-6">
-          Booking của bạn đã được xác nhận và lưu vào hệ thống.
+          Chúc mừng bạn đã đặt sân thành công, vui lòng kiểm tra thông tin trong email và đợi quản
+          trị viên xác nhận.
         </Typography>
 
         <Paper elevation={2} className="p-6 mb-6 max-w-md mx-auto">
@@ -618,13 +520,6 @@ export const BookingPage: React.FC = () => {
           <Button variant="outlined" href="/dashboard" className="border-gray-300 text-gray-700">
             Về trang chủ
           </Button>
-          <Button
-            variant="contained"
-            href="/bookings"
-            className="bg-emerald-600 hover:bg-emerald-700"
-          >
-            Xem lịch đặt
-          </Button>
         </div>
       </div>
     </Container>
@@ -632,7 +527,6 @@ export const BookingPage: React.FC = () => {
 
   return (
     <Box className="min-h-screen bg-gray-50">
-      {/* Progress Stepper */}
       <Paper elevation={1} className="p-4 mb-6 bg-white">
         <Stepper activeStep={activeStep} alternativeLabel>
           {steps.map((label) => (
@@ -643,7 +537,6 @@ export const BookingPage: React.FC = () => {
         </Stepper>
       </Paper>
 
-      {/* Step Content */}
       {activeStep === 0 && renderTimeSelection()}
       {activeStep === 1 && renderConfirmation()}
       {activeStep === 2 && renderSuccess()}
