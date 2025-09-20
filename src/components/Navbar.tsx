@@ -76,7 +76,6 @@ export const Navbar: React.FC<NavbarProps> = () => {
     { label: 'Trang chủ', path: '/', icon: Home },
     { label: 'Xem sân', path: '/courts', icon: SportsTennis },
     { label: 'Đặt sân', path: '/booking', icon: EventNote },
-    { label: 'Lịch sử', path: '/bookings', icon: History },
   ];
 
   const adminNavItems = [
