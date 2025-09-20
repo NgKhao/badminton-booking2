@@ -12,7 +12,13 @@ import {
   type RegisterResponse as AuthRegisterResponse,
 } from '../services/authService';
 import type { AxiosResponse, AxiosError } from 'axios';
-import type { AvailabilitySlot, NewBookingRequest, NewBookingResponse } from '../types';
+import type {
+  AvailabilitySlot,
+  NewBookingRequest,
+  NewBookingResponse,
+  ChatRequest,
+  ChatResponse,
+} from '../types';
 
 // ================== AUTH API HOOKS ==================
 
@@ -982,6 +988,23 @@ export const useApiQuery = <TData = unknown, TError = AxiosError>(
     queryKey,
     queryFn: async () => {
       const response = await queryFn();
+      return response.data;
+    },
+    ...options,
+  });
+};
+
+// ================== CHAT API HOOKS ==================
+
+/**
+ * Hook để gửi tin nhắn chat tới AI
+ */
+export const useChatMutation = (
+  options?: UseMutationOptions<ChatResponse, AxiosError, ChatRequest>
+) => {
+  return useMutation({
+    mutationFn: async (chatData: ChatRequest): Promise<ChatResponse> => {
+      const response: AxiosResponse<ChatResponse> = await api.post('/chat', chatData);
       return response.data;
     },
     ...options,

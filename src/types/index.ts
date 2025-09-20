@@ -169,3 +169,15 @@ export interface NewBookingResponse {
   createdAt: string;
   updatedAt: string | null;
 }
+
+// Chat API types
+export interface ChatRequest {
+  question: string;
+}
+
+export interface ChatResponse {
+  messenger: string;
+  status: number;
+  detail: string;
+  instance: string;
+}

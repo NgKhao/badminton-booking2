@@ -12,6 +12,7 @@ import {
   Drawer,
   useTheme,
   useMediaQuery,
+  CircularProgress,
 } from '@mui/material';
 import {
   Send,
@@ -23,7 +24,9 @@ import {
   CloudQueue,
   Umbrella,
   AcUnit,
+  Error as ErrorIcon,
 } from '@mui/icons-material';
+import { useChatMutation } from '../hooks/useApi';
 
 interface Message {
   id: number;
@@ -31,6 +34,7 @@ interface Message {
   sender: 'user' | 'ai';
   timestamp: Date;
   suggestions?: string[];
+  isError?: boolean;
 }
 
 interface WeatherInfo {
@@ -39,7 +43,7 @@ interface WeatherInfo {
   description: string;
 }
 
-// Mock weather and AI responses
+// Mock weather data for display
 const mockWeatherData: WeatherInfo = {
   temperature: 28,
   condition: 'sunny',
@@ -61,61 +65,30 @@ const getWeatherIcon = (condition: string) => {
   }
 };
 
-const generateAIResponse = (userMessage: string, weather: WeatherInfo): Message => {
-  const lowerMessage = userMessage.toLowerCase();
+// Function to generate suggestions based on AI response
+const generateSuggestions = (aiResponse: string): string[] => {
+  const response = aiResponse.toLowerCase();
+  const suggestions: string[] = [];
 
-  let response = '';
-  let suggestions: string[] = [];
-
-  if (lowerMessage.includes('thời tiết') || lowerMessage.includes('sân nào')) {
-    if (weather.condition === 'sunny' && weather.temperature > 25) {
-      response = `Hôm nay trời nắng ${weather.temperature}°C, tôi khuyên bạn nên chọn sân trong nhà để tránh nắng gắt và có trải nghiệm chơi thoải mái hơn. Sân A1 và A2 đều có điều hòa mát lạnh!`;
-      suggestions = ['Xem sân trong nhà', 'Giá sân trong nhà', 'Đặt sân A1'];
-    } else if (weather.condition === 'cloudy') {
-      response = `Thời tiết hôm nay nhiều mây, rất phù hợp để chơi sân ngoài trời! Bạn có thể tiết kiệm chi phí và tận hưởng không khí tự nhiên tại sân B1 hoặc B2.`;
-      suggestions = ['Xem sân ngoài trời', 'Giá sân ngoài trời', 'Đặt sân B1'];
-    } else {
-      response = `Dựa vào thời tiết hiện tại, tôi khuyên bạn nên chọn sân trong nhà để đảm bảo có thể chơi thoải mái nhất!`;
-      suggestions = ['Xem tất cả sân', 'So sánh giá'];
-    }
-  } else if (lowerMessage.includes('giá') || lowerMessage.includes('chi phí')) {
-    response = `Hiện tại chúng tôi có 2 loại sân:
-    
-🏢 Sân trong nhà: 150.000đ/giờ (có điều hòa, ánh sáng chuyên nghiệp)
-🌳 Sân ngoài trời: 100.000đ/giờ (không gian thoáng mát, giá tiết kiệm)
-
-Với thời tiết ${weather.temperature}°C hôm nay, tôi khuyên bạn chọn sân trong nhà!`;
-    suggestions = ['Đặt sân trong nhà', 'Đặt sân ngoài trời', 'Xem chi tiết'];
-  } else if (lowerMessage.includes('đặt') || lowerMessage.includes('booking')) {
-    response = `Tôi sẽ hướng dẫn bạn đặt sân! Dựa vào thời tiết hiện tại (${weather.temperature}°C, ${weather.description}), tôi khuyên bạn nên chọn sân trong nhà để có trải nghiệm tốt nhất.`;
-    suggestions = ['Đặt sân ngay', 'Xem lịch trống', 'Chọn thời gian'];
-  } else if (lowerMessage.includes('thời gian') || lowerMessage.includes('giờ')) {
-    response = `Chúng tôi mở cửa từ 6:00 sáng đến 22:00 tối hàng ngày. Các khung giờ phổ biến:
-    
-🌅 Sáng sớm (6:00-9:00): Không khí mát mẻ, ít đông
-🌞 Buổi trua (12:00-14:00): Nên chọn sân trong nhà
-🌆 Buổi chiều (17:00-20:00): Khung giờ vàng, rất đông
-🌙 Buổi tối (20:00-22:00): Mát mẻ, thích hợp chơi ngoài trời`;
-    suggestions = ['Đặt sáng sớm', 'Đặt buổi chiều', 'Đặt buổi tối'];
-  } else {
-    response = `Xin chào! Tôi là AI Assistant của BadmintonBooking. Tôi có thể giúp bạn:
-
-🏸 Tư vấn chọn sân phù hợp với thời tiết
-💰 Thông tin giá cả và khuyến mãi  
-📅 Hướng dẫn đặt sân và chọn thời gian
-🌤️ Dự báo thời tiết để lên kế hoạch chơi
-
-Hôm nay thời tiết ${weather.description}, bạn muốn tôi tư vấn gì?`;
-    suggestions = ['Tư vấn chọn sân', 'Xem bảng giá', 'Đặt sân ngay', 'Dự báo thời tiết'];
+  if (response.includes('sân') && response.includes('indoor')) {
+    suggestions.push('Xem sân trong nhà', 'Đặt sân trong nhà');
+  }
+  if (response.includes('sân') && response.includes('outdoor')) {
+    suggestions.push('Xem sân ngoài trời', 'Đặt sân ngoài trời');
+  }
+  if (response.includes('dịch vụ')) {
+    suggestions.push('Xem tất cả dịch vụ', 'Thuê thiết bị');
+  }
+  if (response.includes('giờ') || response.includes('thời gian')) {
+    suggestions.push('Đặt sân ngay', 'Xem lịch trống');
   }
 
-  return {
-    id: Date.now(),
-    text: response,
-    sender: 'ai',
-    timestamp: new Date(),
-    suggestions,
-  };
+  // Default suggestions if no specific matches
+  if (suggestions.length === 0) {
+    suggestions.push('Đề xuất sân phù hợp', 'Xem dịch vụ', 'Hỏi về giá cả');
+  }
+
+  return suggestions;
 };
 
 interface AIChatProps {
@@ -130,18 +103,47 @@ export const AIChat: React.FC<AIChatProps> = ({ open, onClose }) => {
       text: `Xin chào! Tôi là AI Assistant của BadmintonBooking. Hôm nay thời tiết ${mockWeatherData.description}, tôi có thể giúp bạn tư vấn sân phù hợp nhất!`,
       sender: 'ai',
       timestamp: new Date(),
-      suggestions: ['Tư vấn chọn sân', 'Xem bảng giá', 'Đặt sân ngay'],
+      suggestions: [
+        'Đề xuất sân phù hợp vào lúc 10h',
+        'Bên bạn có những dịch vụ nào',
+        'Xem bảng giá',
+      ],
     },
   ]);
   const [inputMessage, setInputMessage] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
+  // Chat mutation hook
+  const chatMutation = useChatMutation({
+    onSuccess: (response) => {
+      const aiMessage: Message = {
+        id: Date.now(),
+        text: response.detail,
+        sender: 'ai',
+        timestamp: new Date(),
+        suggestions: generateSuggestions(response.detail),
+      };
+      setMessages((prev) => [...prev, aiMessage]);
+    },
+    onError: (error) => {
+      console.error('Chat API error:', error);
+      const errorMessage: Message = {
+        id: Date.now(),
+        text: 'Xin lỗi, hiện tại tôi không thể trả lời câu hỏi của bạn. Vui lòng thử lại sau.',
+        sender: 'ai',
+        timestamp: new Date(),
+        isError: true,
+        suggestions: ['Thử lại', 'Liên hệ hỗ trợ'],
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    },
+  });
+
   const handleSendMessage = async (message?: string) => {
     const messageText = message || inputMessage.trim();
-    if (!messageText) return;
+    if (!messageText || chatMutation.isPending) return;
 
     // Add user message
     const userMessage: Message = {
@@ -153,14 +155,9 @@ export const AIChat: React.FC<AIChatProps> = ({ open, onClose }) => {
 
     setMessages((prev) => [...prev, userMessage]);
     setInputMessage('');
-    setIsTyping(true);
 
-    // Simulate AI thinking time
-    setTimeout(() => {
-      const aiResponse = generateAIResponse(messageText, mockWeatherData);
-      setMessages((prev) => [...prev, aiResponse]);
-      setIsTyping(false);
-    }, 1500);
+    // Call chat API
+    chatMutation.mutate({ question: messageText });
   };
 
   const handleSuggestionClick = (suggestion: string) => {
@@ -230,10 +227,28 @@ export const AIChat: React.FC<AIChatProps> = ({ open, onClose }) => {
                   elevation={1}
                   sx={{
                     p: 1.5,
-                    bgcolor: message.sender === 'user' ? 'primary.main' : 'grey.100',
-                    color: message.sender === 'user' ? 'white' : 'text.primary',
+                    bgcolor: message.isError
+                      ? 'error.light'
+                      : message.sender === 'user'
+                        ? 'primary.main'
+                        : 'grey.100',
+                    color: message.isError
+                      ? 'error.contrastText'
+                      : message.sender === 'user'
+                        ? 'white'
+                        : 'text.primary',
+                    border: message.isError ? '1px solid' : 'none',
+                    borderColor: message.isError ? 'error.main' : 'transparent',
                   }}
                 >
+                  {message.isError && (
+                    <Box display="flex" alignItems="center" gap={1} mb={1}>
+                      <ErrorIcon color="error" fontSize="small" />
+                      <Typography variant="caption" color="error.main">
+                        Lỗi kết nối
+                      </Typography>
+                    </Box>
+                  )}
                   <Typography variant="body2" sx={{ whiteSpace: 'pre-line' }}>
                     {message.text}
                   </Typography>
@@ -261,15 +276,18 @@ export const AIChat: React.FC<AIChatProps> = ({ open, onClose }) => {
         ))}
 
         {/* Typing indicator */}
-        {isTyping && (
+        {chatMutation.isPending && (
           <Box display="flex" alignItems="center" gap={1} mb={2}>
             <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
               <SmartToy />
             </Avatar>
             <Paper elevation={1} sx={{ p: 1.5, bgcolor: 'grey.100' }}>
-              <Typography variant="body2" color="text.secondary">
-                AI đang suy nghĩ...
-              </Typography>
+              <Box display="flex" alignItems="center" gap={1}>
+                <CircularProgress size={16} />
+                <Typography variant="body2" color="text.secondary">
+                  AI đang suy nghĩ...
+                </Typography>
+              </Box>
             </Paper>
           </Box>
         )}
@@ -292,7 +310,7 @@ export const AIChat: React.FC<AIChatProps> = ({ open, onClose }) => {
           <Button
             variant="contained"
             onClick={() => handleSendMessage()}
-            disabled={!inputMessage.trim() || isTyping}
+            disabled={!inputMessage.trim() || chatMutation.isPending}
             sx={{ minWidth: 'auto', p: 1 }}
           >
             <Send />
