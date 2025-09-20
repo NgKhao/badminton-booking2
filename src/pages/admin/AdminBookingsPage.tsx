@@ -161,7 +161,7 @@ export const AdminBookingsPage: React.FC = () => {
 
   // Convert API Court format to component expected format
   const mappedCourts = useMemo(() => {
-    const courtsArray = courtsData || [];
+    const courtsArray = courtsData?.courts || [];
     return courtsArray.map((court) => ({
       court_id: court.id,
       court_name: court.courtName,
