@@ -181,3 +181,21 @@ export interface ChatResponse {
   detail: string;
   instance: string;
 }
+
+// Dashboard API types
+export interface DashboardData {
+  totalBookings: number;
+  completedBookings: number;
+  newCustomers: number;
+  totalRevenue: number;
+  revenueChart: Record<string, number>; // "Day 11": 100000.00, etc.
+}
+
+export interface DashboardDailyParams {
+  date: string; // Format: "YYYY-MM-DD"
+}
+
+export interface DashboardMonthlyParams {
+  month: number; // 1-12
+  year: number; // YYYY
+}

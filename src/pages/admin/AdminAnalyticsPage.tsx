@@ -21,131 +21,65 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { format, subDays } from 'date-fns';
+import { format } from 'date-fns';
+import { useDashboardDaily, useDashboardMonthly } from '../../hooks/useApi';
 
 // Types
 interface RevenueData {
   date: string;
   revenue: number;
-  bookings: number;
 }
 
-interface CourtUsageData {
-  court_name: string;
-  bookings: number;
-  revenue: number;
-  utilization: number;
-}
-
-interface CustomerData {
-  customer_id: number;
-  full_name: string;
-  total_bookings: number;
-  total_spent: number;
-  last_booking: string;
-  membership_level: 'basic' | 'premium' | 'vip';
-}
-
-// Mock data
-const generateRevenueData = (days: number): RevenueData[] => {
-  const data: RevenueData[] = [];
-  for (let i = days - 1; i >= 0; i--) {
-    const date = subDays(new Date(), i);
-    data.push({
-      date: format(date, 'MM/dd'),
-      revenue: Math.floor(Math.random() * 2000000) + 500000,
-      bookings: Math.floor(Math.random() * 20) + 5,
-    });
-  }
-  return data;
+// Utility function to transform chart data
+const transformChartData = (revenueChart: Record<string, number>): RevenueData[] => {
+  return Object.entries(revenueChart).map(([date, revenue]) => ({
+    date,
+    revenue,
+  }));
 };
-
-const courtUsageData: CourtUsageData[] = [
-  { court_name: 'Sân VIP 1', bookings: 145, revenue: 21750000, utilization: 85 },
-  { court_name: 'Sân VIP 2', bookings: 132, revenue: 19800000, utilization: 78 },
-  { court_name: 'Sân Standard 1', bookings: 168, revenue: 20160000, utilization: 92 },
-  { court_name: 'Sân Standard 2', bookings: 155, revenue: 18600000, utilization: 88 },
-  { court_name: 'Sân Ngoài trời A', bookings: 98, revenue: 9800000, utilization: 65 },
-  { court_name: 'Sân Ngoài trời B', bookings: 87, revenue: 8700000, utilization: 58 },
-];
-
-const topCustomersData: CustomerData[] = [
-  {
-    customer_id: 1,
-    full_name: 'Nguyễn Văn An',
-    total_bookings: 45,
-    total_spent: 6750000,
-    last_booking: '2025-09-06',
-    membership_level: 'vip',
-  },
-  {
-    customer_id: 2,
-    full_name: 'Trần Thị Bình',
-    total_bookings: 38,
-    total_spent: 5320000,
-    last_booking: '2025-09-05',
-    membership_level: 'premium',
-  },
-  {
-    customer_id: 3,
-    full_name: 'Lê Minh Cường',
-    total_bookings: 32,
-    total_spent: 4160000,
-    last_booking: '2025-09-04',
-    membership_level: 'premium',
-  },
-  {
-    customer_id: 4,
-    full_name: 'Phạm Thu Duyên',
-    total_bookings: 28,
-    total_spent: 3640000,
-    last_booking: '2025-09-03',
-    membership_level: 'basic',
-  },
-  {
-    customer_id: 5,
-    full_name: 'Hoàng Văn Em',
-    total_bookings: 25,
-    total_spent: 3250000,
-    last_booking: '2025-09-02',
-    membership_level: 'basic',
-  },
-];
 
 export const AdminAnalyticsPage: React.FC = () => {
   const theme = useTheme();
   const [timeRange, setTimeRange] = useState<'today' | 'thisMonth'>('thisMonth');
 
-  // Generate data based on time range
-  const revenueData = useMemo(() => {
-    const days = timeRange === 'today' ? 1 : 30; // Hôm nay = 1 ngày, Tháng này = 30 ngày
-    return generateRevenueData(days);
+  // Prepare API params based on time range
+  const apiParams = useMemo(() => {
+    const today = new Date();
+    if (timeRange === 'today') {
+      return {
+        type: 'daily' as const,
+        params: { date: format(today, 'yyyy-MM-dd') },
+      };
+    } else {
+      return {
+        type: 'monthly' as const,
+        params: { month: today.getMonth() + 1, year: today.getFullYear() },
+      };
+    }
   }, [timeRange]);
 
-  // Calculate summary stats
-  const summaryStats = useMemo(() => {
-    const totalRevenue = revenueData.reduce((sum, item) => sum + item.revenue, 0);
-    const totalBookings = revenueData.reduce((sum, item) => sum + item.bookings, 0);
-    const newCustomers = Math.floor(Math.random() * 50) + 10; // Mock data cho khách hàng mới
-    const totalCourts = courtUsageData.length;
-    const avgUtilization =
-      courtUsageData.reduce((sum, court) => sum + court.utilization, 0) / totalCourts;
+  // Fetch dashboard data - always call both hooks to avoid conditional hooks
+  const dailyQuery = useDashboardDaily(
+    apiParams.type === 'daily' ? apiParams.params : { date: '' }
+  );
 
-    // Calculate trends (comparing with previous period)
-    const currentPeriodRevenue = totalRevenue;
-    const previousPeriodRevenue = currentPeriodRevenue * (0.85 + Math.random() * 0.3); // Mock previous data
-    const revenueGrowth =
-      ((currentPeriodRevenue - previousPeriodRevenue) / previousPeriodRevenue) * 100;
+  const monthlyQuery = useDashboardMonthly(
+    apiParams.type === 'monthly' ? apiParams.params : { month: 0, year: 0 }
+  );
 
-    return {
-      totalRevenue,
-      totalBookings,
-      newCustomers,
-      totalCustomers: topCustomersData.length * 8, // Mock multiplier
-      avgUtilization,
-      revenueGrowth,
-    };
-  }, [revenueData]);
+  // Use data from the appropriate query
+  const {
+    data: dashboardData,
+    isLoading,
+    error,
+    refetch,
+  } = apiParams.type === 'daily' ? dailyQuery : monthlyQuery;
+
+  // Transform chart data
+  const revenueData = useMemo(() => {
+    if (!dashboardData?.revenueChart) return [];
+    return transformChartData(dashboardData.revenueChart);
+  }, [dashboardData]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -186,8 +120,9 @@ export const AdminAnalyticsPage: React.FC = () => {
               variant="outlined"
               startIcon={<Refresh />}
               onClick={() => {
-                setTimeRange('thisMonth');
+                refetch();
               }}
+              disabled={isLoading}
             >
               Làm mới
             </Button>
@@ -212,7 +147,7 @@ export const AdminAnalyticsPage: React.FC = () => {
                   Tổng doanh thu
                 </Typography>
                 <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
-                  {formatCurrency(summaryStats.totalRevenue)}
+                  {isLoading ? '...' : formatCurrency(dashboardData?.totalRevenue || 0)}
                 </Typography>
               </Box>
               <AttachMoney sx={{ fontSize: 40, color: 'success.main' }} />
@@ -228,7 +163,7 @@ export const AdminAnalyticsPage: React.FC = () => {
                   Tổng lượt đặt
                 </Typography>
                 <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-                  {summaryStats.totalBookings}
+                  {isLoading ? '...' : dashboardData?.totalBookings || 0}
                 </Typography>
               </Box>
               <EventNote sx={{ fontSize: 40, color: 'primary.main' }} />
@@ -244,7 +179,7 @@ export const AdminAnalyticsPage: React.FC = () => {
                   Khách hàng mới
                 </Typography>
                 <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-                  {summaryStats.newCustomers}
+                  {isLoading ? '...' : dashboardData?.newCustomers || 0}
                 </Typography>
               </Box>
               <PeopleAlt sx={{ fontSize: 40, color: 'info.main' }} />
@@ -260,7 +195,7 @@ export const AdminAnalyticsPage: React.FC = () => {
                   Lượt đặt đã xác nhận
                 </Typography>
                 <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-                  {summaryStats.avgUtilization.toFixed(1)}%
+                  {isLoading ? '...' : dashboardData?.completedBookings || 0}
                 </Typography>
               </Box>
               <SportsTennis sx={{ fontSize: 40, color: 'warning.main' }} />
@@ -279,21 +214,35 @@ export const AdminAnalyticsPage: React.FC = () => {
             </Typography>
           </Box>
           <Box sx={{ p: 3 }}>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={revenueData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip formatter={(value: number) => [formatCurrency(value), 'Doanh thu']} />
-                <Area
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke={theme.palette.primary.main}
-                  fill={theme.palette.primary.light}
-                  fillOpacity={0.6}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            {error ? (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography color="error">Lỗi khi tải dữ liệu</Typography>
+              </Box>
+            ) : isLoading ? (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography color="text.secondary">Đang tải dữ liệu...</Typography>
+              </Box>
+            ) : revenueData.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography color="text.secondary">Không có dữ liệu</Typography>
+              </Box>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={revenueData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip formatter={(value: number) => [formatCurrency(value), 'Doanh thu']} />
+                  <Area
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke={theme.palette.primary.main}
+                    fill={theme.palette.primary.light}
+                    fillOpacity={0.6}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </Box>
         </Card>
       </Box>

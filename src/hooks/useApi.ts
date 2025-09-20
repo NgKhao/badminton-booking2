@@ -18,6 +18,9 @@ import type {
   NewBookingResponse,
   ChatRequest,
   ChatResponse,
+  DashboardData,
+  DashboardDailyParams,
+  DashboardMonthlyParams,
 } from '../types';
 
 // ================== AUTH API HOOKS ==================
@@ -1007,6 +1010,50 @@ export const useChatMutation = (
       const response: AxiosResponse<ChatResponse> = await api.post('/chat', chatData);
       return response.data;
     },
+    ...options,
+  });
+};
+
+// ================== DASHBOARD API HOOKS ==================
+
+/**
+ * Hook để lấy dashboard data theo ngày
+ */
+export const useDashboardDaily = (
+  params: DashboardDailyParams,
+  options?: UseQueryOptions<DashboardData, AxiosError>
+) => {
+  return useQuery({
+    queryKey: ['dashboard', 'daily', params.date],
+    queryFn: async (): Promise<DashboardData> => {
+      const response: AxiosResponse<DashboardData> = await api.get('/dashboard/date', {
+        params: { date: params.date },
+      });
+      return response.data;
+    },
+    enabled: !!params.date,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    ...options,
+  });
+};
+
+/**
+ * Hook để lấy dashboard data theo tháng
+ */
+export const useDashboardMonthly = (
+  params: DashboardMonthlyParams,
+  options?: UseQueryOptions<DashboardData, AxiosError>
+) => {
+  return useQuery({
+    queryKey: ['dashboard', 'monthly', params.month, params.year],
+    queryFn: async (): Promise<DashboardData> => {
+      const response: AxiosResponse<DashboardData> = await api.get('/dashboard/month', {
+        params: { month: params.month, year: params.year },
+      });
+      return response.data;
+    },
+    enabled: !!(params.month && params.year),
+    staleTime: 1000 * 60 * 10, // 10 minutes
     ...options,
   });
 };
