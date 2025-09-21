@@ -289,12 +289,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
           {/* Right side actions */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <IconButton color="inherit">
-              <Badge badgeContent={4} color="error">
-                <Notifications />
-              </Badge>
-            </IconButton>
-
             <IconButton onClick={handleProfileMenuOpen} color="inherit">
               <Avatar
                 sx={{
@@ -337,18 +331,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             {user?.email}
           </Typography>
         </Box>
-        <MenuItem onClick={handleProfileMenuClose}>
-          <ListItemIcon>
-            <AccountCircle fontSize="small" />
-          </ListItemIcon>
-          Hồ sơ cá nhân
-        </MenuItem>
-        <MenuItem onClick={handleProfileMenuClose}>
-          <ListItemIcon>
-            <Settings fontSize="small" />
-          </ListItemIcon>
-          Cài đặt
-        </MenuItem>
+
         <Divider />
         <MenuItem onClick={handleLogout}>
           <ListItemIcon>

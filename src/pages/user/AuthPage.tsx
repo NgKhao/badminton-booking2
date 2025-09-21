@@ -266,12 +266,6 @@ export const AuthPage: React.FC = () => {
                 >
                   {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
                 </Button>
-
-                <Box className="text-center">
-                  <Link href="#" className="text-emerald-600 hover:text-emerald-700">
-                    Quên mật khẩu?
-                  </Link>
-                </Box>
               </Box>
             )}
 
