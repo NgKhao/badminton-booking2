@@ -174,13 +174,13 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
     }
   }, [open, isAddMode, customerMode]);
 
-  const resetCustomerForm = () => {
+  const resetCustomerForm = (mode: 'existing' | 'new' = customerMode) => {
     reset({
       customer_id: 0,
       customer_name: '',
       customer_phone: '',
       customer_email: '',
-      is_new_customer: customerMode === 'new' ? 'true' : 'false',
+      is_new_customer: mode === 'new' ? 'true' : 'false',
     });
     setSelectedCustomer(null); // Reset selected customer
   };
@@ -284,8 +284,14 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
                 <RadioGroup
                   value={customerMode}
                   onChange={(e) => {
-                    setCustomerMode(e.target.value as 'existing' | 'new');
-                    resetCustomerForm();
+                    const mode = e.target.value as 'existing' | 'new';
+                    setCustomerMode(mode);
+                    resetCustomerForm(mode);
+                    if (mode === 'existing') {
+                      clearErrors(['customer_name', 'customer_phone', 'customer_email']);
+                    } else {
+                      clearErrors(['customer_id']);
+                    }
                   }}
                   row
                 >
