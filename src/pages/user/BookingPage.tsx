@@ -93,6 +93,9 @@ export const BookingPage: React.FC = () => {
     (slotTime: Date): boolean => {
       if (!availabilitySlots.length) return false;
 
+      const now = new Date();
+      if (isBefore(slotTime, now)) return false;
+
       const slotTimeString = format(slotTime, 'HH:mm');
       const slotEndTime = format(addMinutes(slotTime, 30), 'HH:mm');
 
@@ -176,6 +179,15 @@ export const BookingPage: React.FC = () => {
   const handleBookingConfirm = async () => {
     if (!selectedCourt || !selectedStartTime || !selectedEndTime || !user) return;
 
+    if (isBefore(selectedStartTime, new Date())) {
+      setSnackbar({
+        open: true,
+        message: 'Khung giờ đã qua, vui lòng chọn khung giờ khác.',
+        severity: 'error',
+      });
+      return;
+    }
+
     setLoading(true);
 
     const bookingData: NewBookingRequest = {
@@ -236,6 +248,7 @@ export const BookingPage: React.FC = () => {
                     setSelectedEndTime(null);
                   }
                 }}
+                disablePast
                 minDate={new Date()}
                 maxDate={addHours(new Date(), 24 * 30)}
                 className="w-full"
@@ -254,40 +267,54 @@ export const BookingPage: React.FC = () => {
 
             <div className="grid grid-cols-3 gap-2 max-h-[400px] overflow-y-auto p-2">
               {getAllTimeSlots.map((slot, index) => {
+                const isPastSlot = isBefore(slot, new Date());
                 const isAvailable = isSlotAvailable(slot);
                 const isSelected =
                   selectedStartTime &&
                   selectedEndTime &&
                   slot >= selectedStartTime &&
-                  slot < selectedEndTime;
+                  slot < selectedEndTime &&
+                  !isPastSlot;
                 const isStartTime =
-                  selectedStartTime && slot.getTime() === selectedStartTime.getTime();
+                  selectedStartTime &&
+                  slot.getTime() === selectedStartTime.getTime() &&
+                  !isPastSlot;
                 const isEndTimeSlot =
-                  selectedEndTime && slot.getTime() === selectedEndTime.getTime() - 30 * 60 * 1000;
+                  selectedEndTime &&
+                  slot.getTime() === selectedEndTime.getTime() - 30 * 60 * 1000 &&
+                  !isPastSlot;
 
                 return (
                   <Tooltip
                     key={index}
-                    title={!isAvailable ? 'Đã có người đặt' : 'Khung giờ trống'}
+                    title={
+                      isPastSlot
+                        ? 'Khung giờ đã qua'
+                        : !isAvailable
+                          ? 'Đã có người đặt'
+                          : 'Khung giờ trống'
+                    }
                     arrow
                   >
                     <div
                       className={`
-                        p-2 text-center rounded-lg cursor-pointer text-xs font-medium transition-all
+                        p-2 text-center rounded-lg text-xs font-medium transition-all
                         ${
-                          !isAvailable
-                            ? 'bg-red-100 text-red-700 cursor-not-allowed'
-                            : isSelected
-                              ? 'bg-emerald-500 text-white'
-                              : isStartTime
-                                ? 'bg-emerald-600 text-white ring-2 ring-emerald-300'
-                                : isEndTimeSlot
-                                  ? 'bg-emerald-400 text-white ring-2 ring-emerald-300'
-                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          isPastSlot
+                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                            : !isAvailable
+                              ? 'bg-red-100 text-red-700 cursor-not-allowed'
+                              : isSelected
+                                ? 'bg-emerald-500 text-white cursor-pointer'
+                                : isStartTime
+                                  ? 'bg-emerald-600 text-white ring-2 ring-emerald-300 cursor-pointer'
+                                  : isEndTimeSlot
+                                    ? 'bg-emerald-400 text-white ring-2 ring-emerald-300 cursor-pointer'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 cursor-pointer'
                         }
                       `}
                       onClick={() => {
-                        if (!isAvailable || !selectedCourt) return;
+                        if (!isAvailable || isPastSlot || !selectedCourt) return;
 
                         if (!selectedStartTime) {
                           setSelectedStartTime(slot);
@@ -306,7 +333,10 @@ export const BookingPage: React.FC = () => {
                       }}
                     >
                       <div>{format(slot, 'HH:mm')}</div>
-                      {!isAvailable && <div className="text-[10px] mt-1">Đã đặt</div>}
+                      {isPastSlot && <div className="text-[10px] mt-1">Đã qua</div>}
+                      {!isPastSlot && !isAvailable && (
+                        <div className="text-[10px] mt-1">Đã đặt</div>
+                      )}
                     </div>
                   </Tooltip>
                 );
