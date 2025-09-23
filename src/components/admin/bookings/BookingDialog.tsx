@@ -34,7 +34,7 @@ import {
   Payment as PaymentIcon,
 } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isBefore } from 'date-fns';
 
 // Interfaces
 interface Booking {
@@ -88,6 +88,10 @@ interface BookingFormData {
   is_new_customer?: string;
 }
 
+const MIN_BOOKING_TIME = '06:00';
+const MAX_BOOKING_TIME = '22:00';
+const TIME_STEP_SECONDS = 30 * 60;
+
 interface BookingDialogProps {
   open: boolean;
   onClose: () => void;
@@ -130,6 +134,8 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
     handleSubmit,
     formState: { errors },
     reset,
+    setError,
+    clearErrors,
   } = useForm<BookingFormData>({
     defaultValues: {
       customer_id: 0,
@@ -180,6 +186,55 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
   };
 
   const handleFormSubmit = (data: BookingFormData) => {
+    clearErrors(['booking_date', 'start_time', 'end_time']);
+
+    const { booking_date, start_time, end_time } = data;
+    const todayString = format(new Date(), 'yyyy-MM-dd');
+
+    if (booking_date < todayString) {
+      setError('booking_date', {
+        type: 'manual',
+        message: 'Không thể chọn ngày trong quá khứ.',
+      });
+      return;
+    }
+
+    if (start_time < MIN_BOOKING_TIME || start_time > MAX_BOOKING_TIME) {
+      setError('start_time', {
+        type: 'manual',
+        message: 'Giờ bắt đầu phải trong khoảng 06:00 - 22:00.',
+      });
+      return;
+    }
+
+    if (end_time < MIN_BOOKING_TIME || end_time > MAX_BOOKING_TIME) {
+      setError('end_time', {
+        type: 'manual',
+        message: 'Giờ kết thúc phải trong khoảng 06:00 - 22:00.',
+      });
+      return;
+    }
+
+    const startDateTime = parseISO(`${booking_date}T${start_time}`);
+    const endDateTime = parseISO(`${booking_date}T${end_time}`);
+    const now = new Date();
+
+    if (!isBefore(startDateTime, endDateTime)) {
+      setError('end_time', {
+        type: 'manual',
+        message: 'Giờ kết thúc phải sau giờ bắt đầu.',
+      });
+      return;
+    }
+
+    if (isBefore(startDateTime, now)) {
+      setError('start_time', {
+        type: 'manual',
+        message: 'Không thể chọn khung giờ trong quá khứ.',
+      });
+      return;
+    }
+
     // Validate selected customer has email if using existing customer
     if (customerMode === 'existing' && selectedCustomer && !selectedCustomer.email) {
       alert(
@@ -448,6 +503,7 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
                       label="Ngày đặt"
                       type="date"
                       InputLabelProps={{ shrink: true }}
+                      inputProps={{ min: format(new Date(), 'yyyy-MM-dd') }}
                       error={!!errors.booking_date}
                       helperText={errors.booking_date?.message}
                       fullWidth
@@ -465,6 +521,7 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
                       label="Giờ bắt đầu"
                       type="time"
                       InputLabelProps={{ shrink: true }}
+                      inputProps={{ min: MIN_BOOKING_TIME, max: MAX_BOOKING_TIME, step: TIME_STEP_SECONDS }}
                       error={!!errors.start_time}
                       helperText={errors.start_time?.message}
                       fullWidth
@@ -482,6 +539,7 @@ export const BookingDialog: React.FC<BookingDialogProps> = ({
                       label="Giờ kết thúc"
                       type="time"
                       InputLabelProps={{ shrink: true }}
+                      inputProps={{ min: MIN_BOOKING_TIME, max: MAX_BOOKING_TIME, step: TIME_STEP_SECONDS }}
                       error={!!errors.end_time}
                       helperText={errors.end_time?.message}
                       fullWidth
