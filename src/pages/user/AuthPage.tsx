@@ -331,8 +331,8 @@ export const AuthPage: React.FC = () => {
                   {...registerSignup('phone', {
                     required: 'Số điện thoại là bắt buộc',
                     pattern: {
-                      value: /^[0-9]{10,11}$/,
-                      message: 'Số điện thoại không hợp lệ',
+                      value: /^[0-9]{10}$/,
+                      message: 'Số điện thoại không hợp lệ (bắt buộc 10 chữ số)',
                     },
                   })}
                   error={!!signupErrors.phone}
