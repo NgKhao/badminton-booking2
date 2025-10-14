@@ -192,6 +192,8 @@ export const useCurrentUser = (options?: UseQueryOptions<UserProfile, AxiosError
 export const useUpdateProfileMutation = (
   options?: UseMutationOptions<UserProfile, AxiosError, Partial<UserProfile>>
 ) => {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (profileData: Partial<UserProfile>): Promise<UserProfile> => {
       const response: AxiosResponse<{ detail: UserProfile }> = await api.put(
@@ -199,6 +201,32 @@ export const useUpdateProfileMutation = (
         profileData
       );
       return response.data.detail;
+    },
+    onSuccess: () => {
+      // Invalidate and refetch user data
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+    },
+    ...options,
+  });
+};
+
+/**
+ * Interface cho change password request
+ */
+export interface ChangePasswordRequest {
+  oldPassword: string;
+  newPassword: string;
+}
+
+/**
+ * Hook để đổi mật khẩu
+ */
+export const useChangePasswordMutation = (
+  options?: UseMutationOptions<void, AxiosError, ChangePasswordRequest>
+) => {
+  return useMutation({
+    mutationFn: async (passwordData: ChangePasswordRequest): Promise<void> => {
+      await api.put('/user/change-password', passwordData);
     },
     ...options,
   });

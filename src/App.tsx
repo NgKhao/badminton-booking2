@@ -13,6 +13,7 @@ import { HomePage } from './pages/user/HomePage';
 import { AuthPage } from './pages/user/AuthPage';
 import { BookingPage } from './pages/user/BookingPage';
 import { CourtsPage } from './pages/user/CourtsPage';
+import { ProfilePage } from './pages/user/ProfilePage';
 
 // Admin Pages
 import { AdminLayout } from './pages/admin/AdminLayout';
@@ -113,6 +114,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <BookingPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <ProfilePage />
                     </ProtectedRoute>
                   }
                 />

@@ -15,13 +15,12 @@ import {
   SportsBasketball as BadmintonIcon,
   ExitToApp,
   Person,
-  History,
   Home,
   EventNote,
   SportsTennis,
   Settings,
 } from '@mui/icons-material';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useLogoutMutation } from '../hooks/useApi';
 
@@ -33,6 +32,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
   const { user, logout, isAuthenticated } = useAuthStore();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const location = useLocation();
+  const navigate = useNavigate();
 
   // React Query logout mutation
   const logoutMutation = useLogoutMutation({
@@ -144,6 +144,16 @@ export const Navbar: React.FC<NavbarProps> = () => {
                 onClose={handleClose}
                 sx={{ mt: 1 }}
               >
+                <MenuItem
+                  onClick={() => {
+                    handleClose();
+                    navigate('/profile');
+                  }}
+                  sx={{ display: 'flex', alignItems: 'center' }}
+                >
+                  <Person sx={{ mr: 1 }} fontSize="small" />
+                  Hồ sơ cá nhân
+                </MenuItem>
                 <MenuItem
                   onClick={handleLogout}
                   sx={{ display: 'flex', alignItems: 'center', color: 'error.main' }}
