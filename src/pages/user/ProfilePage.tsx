@@ -54,17 +54,21 @@ const getFullName = (user: User | UserProfile | null): string => {
 };
 
 const getPhone = (user: User | UserProfile | null): string => {
-  return user?.phone || '';
+  if (!user) return '';
+  return 'numberPhone' in user ? user.numberPhone : user.phone || '';
 };
 
 const getIsActive = (user: User | UserProfile | null): boolean => {
   if (!user) return false;
-  return 'isActive' in user ? user.isActive : user.is_active;
+  return 'active' in user ? user.active : user.is_active;
 };
 
-const getCreatedAt = (user: User | UserProfile | null): string => {
-  if (!user) return '';
-  return 'createdAt' in user ? user.createdAt : user.created_at;
+const getRoleName = (user: User | UserProfile | null): string => {
+  if (!user) return 'CUSTOMER';
+  if ('roleName' in user) {
+    return user.roleName === 'ADMIN' ? 'admin' : 'customer';
+  }
+  return user.role || 'customer';
 };
 
 export const ProfilePage: React.FC = () => {
@@ -93,7 +97,7 @@ export const ProfilePage: React.FC = () => {
       setIsEditing(false);
       updateUser({
         full_name: data.fullName,
-        phone: data.phone,
+        phone: data.numberPhone,
       });
       setTimeout(() => setSuccessMessage(''), 3000);
       refetch();
@@ -173,7 +177,7 @@ export const ProfilePage: React.FC = () => {
 
     updateProfileMutation.mutate({
       fullName: profileForm.fullName,
-      phone: profileForm.phone,
+      numberPhone: profileForm.phone,
     });
   };
 
@@ -245,9 +249,9 @@ export const ProfilePage: React.FC = () => {
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Chip
-                  icon={user?.role === 'admin' ? <AdminPanelSettings /> : <Person />}
-                  label={user?.role === 'admin' ? 'Quản trị viên' : 'Khách hàng'}
-                  color={user?.role === 'admin' ? 'error' : 'primary'}
+                  icon={getRoleName(user) === 'admin' ? <AdminPanelSettings /> : <Person />}
+                  label={getRoleName(user) === 'admin' ? 'Quản trị viên' : 'Khách hàng'}
+                  color={getRoleName(user) === 'admin' ? 'error' : 'primary'}
                   size="small"
                 />
               </Box>
@@ -331,7 +335,7 @@ export const ProfilePage: React.FC = () => {
                 </Box>
                 <TextField
                   fullWidth
-                  value={user?.role === 'admin' ? 'Quản trị viên' : 'Khách hàng'}
+                  value={getRoleName(user) === 'admin' ? 'Quản trị viên' : 'Khách hàng'}
                   disabled
                   variant="outlined"
                 />
@@ -340,16 +344,12 @@ export const ProfilePage: React.FC = () => {
               <Box sx={{ flex: 1 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                   <Typography variant="subtitle2" color="text.secondary">
-                    Ngày tạo
+                    Trạng thái
                   </Typography>
                 </Box>
                 <TextField
                   fullWidth
-                  value={
-                    getCreatedAt(user)
-                      ? new Date(getCreatedAt(user)).toLocaleDateString('vi-VN')
-                      : 'N/A'
-                  }
+                  value={getIsActive(user) ? 'Đang hoạt động' : 'Không hoạt động'}
                   disabled
                   variant="outlined"
                 />

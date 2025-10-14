@@ -161,25 +161,41 @@ export const useRefreshTokenMutation = (
 
 // ================== USER API HOOKS ==================
 
+// Response type from API /users/me
+export interface UserProfileResponse {
+  messenger: string;
+  status: number;
+  detail: {
+    userId: number;
+    customerId: number;
+    email: string;
+    fullName: string;
+    numberPhone: string;
+    active: boolean;
+    roleName: 'CUSTOMER' | 'ADMIN';
+  };
+  instance: string;
+}
+
+// Normalized UserProfile type for frontend use
 export interface UserProfile {
-  id: number;
+  userId: number;
+  customerId: number;
   email: string;
   fullName: string;
-  phone?: string;
-  role: 'CUSTOMER' | 'ADMIN';
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  numberPhone: string;
+  active: boolean;
+  roleName: 'CUSTOMER' | 'ADMIN';
 }
 
 /**
- * Hook để lấy thông tin user hiện tại
+ * Hook để lấy thông tin user hiện tại từ /users/me
  */
 export const useCurrentUser = (options?: UseQueryOptions<UserProfile, AxiosError>) => {
   return useQuery({
     queryKey: ['currentUser'],
     queryFn: async (): Promise<UserProfile> => {
-      const response: AxiosResponse<{ detail: UserProfile }> = await api.get('/auth/me');
+      const response: AxiosResponse<UserProfileResponse> = await api.get('/users/me');
       return response.data.detail;
     },
     ...options,
