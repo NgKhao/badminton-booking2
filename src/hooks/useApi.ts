@@ -204,18 +204,26 @@ export const useCurrentUser = (options?: UseQueryOptions<UserProfile, AxiosError
 
 /**
  * Hook để cập nhật profile user
+ * PUT /users/{userId}
  */
 export const useUpdateProfileMutation = (
-  options?: UseMutationOptions<UserProfile, AxiosError, Partial<UserProfile>>
+  options?: UseMutationOptions<
+    UserProfile,
+    AxiosError,
+    { userId: number; data: { fullName: string; numberPhone: string } }
+  >
 ) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (profileData: Partial<UserProfile>): Promise<UserProfile> => {
-      const response: AxiosResponse<{ detail: UserProfile }> = await api.put(
-        '/user/profile',
-        profileData
-      );
+    mutationFn: async ({
+      userId,
+      data,
+    }: {
+      userId: number;
+      data: { fullName: string; numberPhone: string };
+    }): Promise<UserProfile> => {
+      const response: AxiosResponse<UserProfileResponse> = await api.put(`/users/${userId}`, data);
       return response.data.detail;
     },
     onSuccess: () => {

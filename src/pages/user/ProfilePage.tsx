@@ -175,9 +175,21 @@ export const ProfilePage: React.FC = () => {
       return;
     }
 
+    // Get userId from current user data
+    const userId = user && 'userId' in user ? user.userId : user?.user_id;
+
+    if (!userId) {
+      setErrorMessage('Không tìm thấy thông tin người dùng');
+      setTimeout(() => setErrorMessage(''), 3000);
+      return;
+    }
+
     updateProfileMutation.mutate({
-      fullName: profileForm.fullName,
-      numberPhone: profileForm.phone,
+      userId,
+      data: {
+        fullName: profileForm.fullName,
+        numberPhone: profileForm.phone,
+      },
     });
   };
 
