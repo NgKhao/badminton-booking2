@@ -243,14 +243,26 @@ export interface ChangePasswordRequest {
 }
 
 /**
+ * Interface cho change password response
+ */
+export interface ChangePasswordResponse {
+  messenger: string;
+  status: number;
+  detail: null;
+  instance: string;
+}
+
+/**
  * Hook để đổi mật khẩu
+ * PATCH /change-password
  */
 export const useChangePasswordMutation = (
-  options?: UseMutationOptions<void, AxiosError, ChangePasswordRequest>
+  options?: UseMutationOptions<ChangePasswordResponse, AxiosError, ChangePasswordRequest>
 ) => {
   return useMutation({
-    mutationFn: async (passwordData: ChangePasswordRequest): Promise<void> => {
-      await api.put('/user/change-password', passwordData);
+    mutationFn: async (passwordData: ChangePasswordRequest): Promise<ChangePasswordResponse> => {
+      const response = await api.patch('/change-password', passwordData);
+      return response.data;
     },
     ...options,
   });

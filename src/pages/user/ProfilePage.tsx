@@ -112,8 +112,9 @@ export const ProfilePage: React.FC = () => {
   });
 
   const changePasswordMutation = useChangePasswordMutation({
-    onSuccess: () => {
-      setSuccessMessage('Đổi mật khẩu thành công!');
+    onSuccess: (data) => {
+      // Use the message from API response
+      setSuccessMessage(data.messenger || 'Đổi mật khẩu thành công!');
       setOpenPasswordDialog(false);
       setPasswordForm({
         oldPassword: '',
