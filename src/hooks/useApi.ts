@@ -777,6 +777,59 @@ export interface DeleteCustomerResponse {
   instance: string;
 }
 
+// Types for creating customer
+export interface CreateCustomerRequest {
+  fullName: string;
+  email: string;
+  numberPhone: string;
+  // Không cần password và active - API tự động tạo
+}
+
+export interface CreateCustomerResponse {
+  messenger: string;
+  status: number;
+  detail: {
+    userId: number;
+    customerId: number;
+    email: string;
+    fullName: string;
+    numberPhone: string;
+    active: boolean;
+    roleName: 'CUSTOMER' | 'ADMIN';
+  };
+  instance: string;
+}
+
+/**
+ * Hook để tạo khách hàng mới (POST /api/admin/users)
+ */
+export const useCreateCustomerMutation = (
+  options?: UseMutationOptions<Customer, AxiosError, CreateCustomerRequest>
+) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: CreateCustomerRequest): Promise<Customer> => {
+      const response: AxiosResponse<CreateCustomerResponse> = await api.post('/admin/users', data);
+      // Map response detail to Customer format
+      const detail = response.data.detail;
+      return {
+        userId: detail.userId,
+        customerId: detail.customerId,
+        email: detail.email,
+        fullName: detail.fullName,
+        numberPhone: detail.numberPhone,
+        active: detail.active,
+        roleName: detail.roleName,
+      };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+    },
+    ...options,
+  });
+};
+
 /**
  * Hook để cập nhật thông tin khách hàng (PUT /api/users/{id})
  */

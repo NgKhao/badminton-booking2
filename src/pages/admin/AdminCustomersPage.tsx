@@ -42,14 +42,17 @@ import {
   Cancel,
   CheckCircle,
   Group,
+  Add,
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import {
   useCustomers,
   useUpdateCustomerMutation,
   useDeleteCustomerMutation,
+  useCreateCustomerMutation,
   type Customer,
   type UpdateCustomerRequest,
+  type CreateCustomerRequest,
 } from '../../hooks/useApi';
 
 // Simplified Customer Form Data (removed unnecessary fields)
@@ -57,7 +60,7 @@ interface CustomerFormData {
   fullName: string;
   email: string;
   numberPhone: string;
-  active: boolean;
+  active: boolean; // Only used for update
 }
 
 export const AdminCustomersPage: React.FC = () => {
@@ -120,6 +123,28 @@ export const AdminCustomersPage: React.FC = () => {
     },
   });
 
+  const createCustomerMutation = useCreateCustomerMutation({
+    onSuccess: () => {
+      setSnackbar({
+        open: true,
+        message: 'Tạo khách hàng mới thành công!',
+        severity: 'success',
+      });
+      setOpenDialog(false);
+      refetch(); // Refresh the customer list
+    },
+    onError: (error) => {
+      const errorMsg =
+        (error as { response?: { data?: { messenger?: string } } }).response?.data?.messenger ||
+        error.message;
+      setSnackbar({
+        open: true,
+        message: `Lỗi khi tạo khách hàng: ${errorMsg}`,
+        severity: 'error',
+      });
+    },
+  });
+
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
 
@@ -171,6 +196,18 @@ export const AdminCustomersPage: React.FC = () => {
   };
 
   // CRUD operations - simplified for display only
+  const handleAdd = () => {
+    setEditMode(false);
+    setSelectedCustomer(null);
+    setFormData({
+      fullName: '',
+      email: '',
+      numberPhone: '',
+      active: true,
+    });
+    setOpenDialog(true);
+  };
+
   const handleEdit = (customer: Customer) => {
     setEditMode(true);
     setSelectedCustomer(customer);
@@ -217,13 +254,14 @@ export const AdminCustomersPage: React.FC = () => {
         data: updateData,
       });
     } else {
-      // Create new customer - TODO: Add create customer API when available
-      setSnackbar({
-        open: true,
-        message: 'Tính năng tạo khách hàng mới chưa được triển khai',
-        severity: 'warning',
-      });
-      setOpenDialog(false);
+      // Create new customer - API không cần password
+      const createData: CreateCustomerRequest = {
+        fullName: formData.fullName,
+        email: formData.email,
+        numberPhone: formData.numberPhone,
+      };
+
+      createCustomerMutation.mutate(createData);
     }
   };
 
@@ -362,10 +400,10 @@ export const AdminCustomersPage: React.FC = () => {
               size="small"
               sx={{ minWidth: 300 }}
             />
-            {/* 
+
             <Button variant="contained" startIcon={<Add />} onClick={handleAdd} sx={{ ml: 'auto' }}>
               Thêm khách hàng
-            </Button> */}
+            </Button>
 
             <Tooltip title="Làm mới dữ liệu">
               <IconButton onClick={() => refetch()}>
@@ -544,6 +582,8 @@ export const AdminCustomersPage: React.FC = () => {
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               fullWidth
               required
+              disabled={editMode} // Email không thể chỉnh sửa khi update
+              helperText={editMode ? 'Email không thể chỉnh sửa' : ''}
             />
             <TextField
               label="Số điện thoại"
@@ -552,15 +592,17 @@ export const AdminCustomersPage: React.FC = () => {
               fullWidth
               required
             />
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.active}
-                  onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
-                />
-              }
-              label="Kích hoạt tài khoản"
-            />
+            {editMode && (
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.active}
+                    onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
+                  />
+                }
+                label="Kích hoạt tài khoản"
+              />
+            )}
           </Box>
         </DialogContent>
         <DialogActions>
@@ -571,9 +613,9 @@ export const AdminCustomersPage: React.FC = () => {
             onClick={handleSave}
             variant="contained"
             startIcon={<Save />}
-            disabled={updateCustomerMutation.isPending}
+            disabled={updateCustomerMutation.isPending || createCustomerMutation.isPending}
           >
-            {updateCustomerMutation.isPending ? (
+            {updateCustomerMutation.isPending || createCustomerMutation.isPending ? (
               <CircularProgress size={20} />
             ) : editMode ? (
               'Cập nhật'
