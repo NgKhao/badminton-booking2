@@ -34,6 +34,7 @@ import {
   ExitToApp,
   Home,
   NavigateNext,
+  Store,
 } from '@mui/icons-material';
 import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
@@ -63,6 +64,12 @@ const menuItems = [
     icon: <People />,
     path: '/admin/customers',
     description: 'Thông tin khách hàng',
+  },
+  {
+    text: 'Quản lý chi nhánh',
+    icon: <Store />,
+    path: '/admin/branches',
+    description: 'Thông tin chi nhánh',
   },
   {
     text: 'Báo cáo & Thống kê',
@@ -156,6 +163,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       else if (pathname === 'courts') displayName = 'Quản lý sân';
       else if (pathname === 'bookings') displayName = 'Quản lý đặt sân';
       else if (pathname === 'customers') displayName = 'Quản lý khách hàng';
+      else if (pathname === 'branches') displayName = 'Quản lý chi nhánh';
       else if (pathname === 'analytics') displayName = 'Báo cáo & Thống kê';
 
       if (isLast) {

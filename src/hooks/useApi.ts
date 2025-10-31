@@ -1174,3 +1174,102 @@ export const useDashboardMonthly = (
     ...options,
   });
 };
+
+// ================== BRANCH API HOOKS ==================
+
+export interface Branch {
+  id: number;
+  branchName: string;
+  address: string;
+  phone: string;
+  isActive: boolean;
+  managerId: number;
+}
+
+export interface BranchListResponse {
+  messenger: string;
+  status: number;
+  detail: {
+    content: Branch[];
+    pageNumber: number;
+    pageSize: number;
+    totalElements: number;
+    totalPages: number;
+    first: boolean;
+    last: boolean;
+  };
+  instance: string;
+}
+
+export interface BranchManager {
+  userId: number;
+  customerId: number | null;
+  email: string;
+  fullName: string;
+  numberPhone: string | null;
+  active: boolean;
+  roleName: 'STAFF' | 'CUSTOMER' | 'ADMIN';
+}
+
+export interface BranchManagerResponse {
+  messenger: string;
+  status: number;
+  detail: BranchManager;
+  instance: string;
+}
+
+/**
+ * Hook để lấy danh sách chi nhánh (admin only) với pagination
+ */
+export const useBranches = (
+  params?: PaginationParams,
+  options?: UseQueryOptions<{ branches: Branch[]; pagination: PaginationInfo }, AxiosError>
+) => {
+  return useQuery({
+    queryKey: ['branches', params],
+    queryFn: async (): Promise<{ branches: Branch[]; pagination: PaginationInfo }> => {
+      const response: AxiosResponse<BranchListResponse> = await api.get('/admin/branches', {
+        params: {
+          page: params?.page ?? 0,
+          size: params?.size ?? 10,
+        },
+      });
+
+      const { content, pageNumber, pageSize, totalElements, totalPages, first, last } =
+        response.data.detail;
+
+      return {
+        branches: content,
+        pagination: {
+          pageNumber,
+          pageSize,
+          totalElements,
+          totalPages,
+          first,
+          last,
+        },
+      };
+    },
+    ...options,
+  });
+};
+
+/**
+ * Hook để lấy thông tin quản lý chi nhánh
+ */
+export const useBranchManager = (
+  managerId: number,
+  options?: UseQueryOptions<BranchManager, AxiosError>
+) => {
+  return useQuery({
+    queryKey: ['branch-manager', managerId],
+    queryFn: async (): Promise<BranchManager> => {
+      const response: AxiosResponse<BranchManagerResponse> = await api.get(
+        `/admin/users/${managerId}`
+      );
+      return response.data.detail;
+    },
+    enabled: !!managerId,
+    ...options,
+  });
+};

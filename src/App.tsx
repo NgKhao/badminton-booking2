@@ -21,6 +21,7 @@ import { AdminCourtsPage } from './pages/admin/AdminCourtsPage';
 import { AdminCustomersPage } from './pages/admin/AdminCustomersPage';
 import { AdminBookingsPage } from './pages/admin/AdminBookingsPage';
 import { AdminAnalyticsPage } from './pages/admin/AdminAnalyticsPage';
+import { AdminBranchesPage } from './pages/admin/AdminBranchesPage';
 import { AdminLoginPage } from './pages/admin/AdminLoginPage';
 
 // Components
@@ -142,6 +143,7 @@ function App() {
                   <Route path="courts" element={<AdminCourtsPage />} />
                   <Route path="customers" element={<AdminCustomersPage />} />
                   <Route path="bookings" element={<AdminBookingsPage />} />
+                  <Route path="branches" element={<AdminBranchesPage />} />
                   <Route path="analytics" element={<AdminAnalyticsPage />} />
                   {/* Add more admin routes here later */}
                 </Route>
