@@ -28,6 +28,7 @@ import {
   FormControl,
   Select,
   MenuItem,
+  Snackbar,
 } from '@mui/material';
 import {
   Visibility,
@@ -39,9 +40,15 @@ import {
   LocationOn,
   Person,
   Email,
+  Add,
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
-import { useBranches, useBranchManager, type Branch } from '../../hooks/useApi';
+import {
+  useBranches,
+  useBranchManager,
+  useCreateBranchMutation,
+  type Branch,
+} from '../../hooks/useApi';
 
 export const AdminBranchesPage: React.FC = () => {
   const theme = useTheme();
@@ -69,7 +76,43 @@ export const AdminBranchesPage: React.FC = () => {
 
   // Dialog states
   const [openViewDialog, setOpenViewDialog] = useState(false);
+  const [openCreateDialog, setOpenCreateDialog] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
+
+  // Form state for creating branch
+  const [formData, setFormData] = useState({
+    branchName: '',
+    address: '',
+    phone: '',
+  });
+
+  // Snackbar state
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success' as 'success' | 'error' | 'warning' | 'info',
+  });
+
+  // Mutation hook for creating branch
+  const createBranchMutation = useCreateBranchMutation({
+    onSuccess: () => {
+      setSnackbar({
+        open: true,
+        message: 'Tạo chi nhánh thành công! Tài khoản quản lý đã được tạo tự động.',
+        severity: 'success',
+      });
+      setOpenCreateDialog(false);
+      resetForm();
+      refetch();
+    },
+    onError: (error) => {
+      setSnackbar({
+        open: true,
+        message: `Lỗi khi tạo chi nhánh: ${error.message}`,
+        severity: 'error',
+      });
+    },
+  });
 
   // Filter and search logic - Apply locally on current page data
   React.useEffect(() => {
@@ -99,6 +142,45 @@ export const AdminBranchesPage: React.FC = () => {
   const handleView = (branch: Branch) => {
     setSelectedBranch(branch);
     setOpenViewDialog(true);
+  };
+
+  const handleAdd = () => {
+    resetForm();
+    setOpenCreateDialog(true);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      branchName: '',
+      address: '',
+      phone: '',
+    });
+  };
+
+  const handleSave = () => {
+    // Validation
+    if (!formData.branchName || !formData.address || !formData.phone) {
+      setSnackbar({
+        open: true,
+        message: 'Vui lòng điền đầy đủ thông tin bắt buộc',
+        severity: 'error',
+      });
+      return;
+    }
+
+    // Validate phone number (basic validation)
+    const phoneRegex = /^[0-9]{10,11}$/;
+    if (!phoneRegex.test(formData.phone)) {
+      setSnackbar({
+        open: true,
+        message: 'Số điện thoại không hợp lệ (10-11 chữ số)',
+        severity: 'error',
+      });
+      return;
+    }
+
+    // Create branch
+    createBranchMutation.mutate(formData);
   };
 
   // Pagination handlers
@@ -235,6 +317,17 @@ export const AdminBranchesPage: React.FC = () => {
                 <Refresh />
               </IconButton>
             </Tooltip>
+
+            <Box sx={{ flexGrow: 1 }} />
+
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={handleAdd}
+              sx={{ whiteSpace: 'nowrap' }}
+            >
+              Thêm chi nhánh
+            </Button>
           </Box>
         </Box>
       </Card>
@@ -362,6 +455,81 @@ export const AdminBranchesPage: React.FC = () => {
           </Box>
         )}
       </Card>
+
+      {/* Create Branch Dialog */}
+      <Dialog
+        open={openCreateDialog}
+        onClose={() => setOpenCreateDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Thêm chi nhánh mới</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Alert severity="info" sx={{ mb: 1 }}>
+              Tạo chi nhánh sẽ tự động tạo tài khoản quản lý cho chi nhánh đó
+            </Alert>
+
+            <TextField
+              label="Tên chi nhánh"
+              value={formData.branchName}
+              onChange={(e) => setFormData({ ...formData, branchName: e.target.value })}
+              fullWidth
+              required
+              placeholder="VD: Chi nhánh Quận 1"
+            />
+
+            <TextField
+              label="Địa chỉ"
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              fullWidth
+              required
+              multiline
+              rows={2}
+              placeholder="VD: 123 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP.HCM"
+            />
+
+            <TextField
+              label="Số điện thoại"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              fullWidth
+              required
+              placeholder="VD: 0912345678"
+              inputProps={{
+                maxLength: 11,
+              }}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 3 }}>
+          <Button onClick={() => setOpenCreateDialog(false)}>Hủy</Button>
+          <Button
+            onClick={handleSave}
+            variant="contained"
+            disabled={createBranchMutation.isPending}
+          >
+            {createBranchMutation.isPending ? 'Đang tạo...' : 'Tạo chi nhánh'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
 
       {/* View Dialog */}
       <ViewBranchDialog

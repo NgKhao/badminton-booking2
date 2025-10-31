@@ -1273,3 +1273,43 @@ export const useBranchManager = (
     ...options,
   });
 };
+
+// Branch create/update types
+export interface CreateBranchRequest {
+  branchName: string;
+  address: string;
+  phone: string;
+}
+
+export interface CreateBranchResponse {
+  messenger: string;
+  status: number;
+  detail: Branch;
+  instance: string;
+}
+
+/**
+ * Hook để tạo chi nhánh mới (admin only)
+ * POST /admin/branches/create-with-manager
+ * Tự động tạo tài khoản manager cho chi nhánh
+ */
+export const useCreateBranchMutation = (
+  options?: UseMutationOptions<Branch, AxiosError, CreateBranchRequest>
+) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (branchData: CreateBranchRequest): Promise<Branch> => {
+      const response: AxiosResponse<CreateBranchResponse> = await api.post(
+        '/admin/branches/create-with-manager',
+        branchData
+      );
+      return response.data.detail;
+    },
+    onSuccess: () => {
+      // Invalidate branches list to trigger refetch
+      queryClient.invalidateQueries({ queryKey: ['branches'] });
+    },
+    ...options,
+  });
+};
