@@ -1358,3 +1358,29 @@ export const useUpdateBranchMutation = (
     ...options,
   });
 };
+
+export interface DeleteBranchResponse {
+  messenger: string;
+  status: number;
+  detail: null;
+  instance: string;
+}
+
+/**
+ * Hook để xóa chi nhánh (admin only)
+ * DELETE /admin/branches/{branchId}
+ */
+export const useDeleteBranchMutation = (options?: UseMutationOptions<void, AxiosError, number>) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (branchId: number): Promise<void> => {
+      await api.delete(`/admin/branches/${branchId}`);
+    },
+    onSuccess: () => {
+      // Invalidate branches list to trigger refetch
+      queryClient.invalidateQueries({ queryKey: ['branches'] });
+    },
+    ...options,
+  });
+};

@@ -44,6 +44,7 @@ import {
   Email,
   Add,
   Edit,
+  Delete,
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import {
@@ -51,6 +52,7 @@ import {
   useBranchManager,
   useCreateBranchMutation,
   useUpdateBranchMutation,
+  useDeleteBranchMutation,
   type Branch,
 } from '../../hooks/useApi';
 
@@ -82,6 +84,7 @@ export const AdminBranchesPage: React.FC = () => {
   const [openViewDialog, setOpenViewDialog] = useState(false);
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
 
   // Form state for creating branch
@@ -141,6 +144,27 @@ export const AdminBranchesPage: React.FC = () => {
     },
   });
 
+  // Mutation hook for deleting branch
+  const deleteBranchMutation = useDeleteBranchMutation({
+    onSuccess: () => {
+      setSnackbar({
+        open: true,
+        message: 'Xóa chi nhánh thành công!',
+        severity: 'success',
+      });
+      setOpenDeleteDialog(false);
+      setSelectedBranch(null);
+      refetch();
+    },
+    onError: (error) => {
+      setSnackbar({
+        open: true,
+        message: `Lỗi khi xóa chi nhánh: ${error.message}`,
+        severity: 'error',
+      });
+    },
+  });
+
   // Filter and search logic - Apply locally on current page data
   React.useEffect(() => {
     let filtered = branches;
@@ -185,6 +209,17 @@ export const AdminBranchesPage: React.FC = () => {
       isActive: branch.isActive,
     });
     setOpenEditDialog(true);
+  };
+
+  const handleDelete = (branch: Branch) => {
+    setSelectedBranch(branch);
+    setOpenDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (selectedBranch) {
+      deleteBranchMutation.mutate(selectedBranch.id);
+    }
   };
 
   const resetForm = () => {
@@ -452,6 +487,15 @@ export const AdminBranchesPage: React.FC = () => {
                           <Edit fontSize="small" />
                         </IconButton>
                       </Tooltip>
+                      <Tooltip title="Xóa">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleDelete(branch)}
+                          sx={{ color: 'error.main' }}
+                        >
+                          <Delete fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                     </Box>
                   </TableCell>
                 </TableRow>
@@ -663,6 +707,48 @@ export const AdminBranchesPage: React.FC = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={openDeleteDialog}
+        onClose={() => setOpenDeleteDialog(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Xác nhận xóa chi nhánh</DialogTitle>
+        <DialogContent>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            Bạn có chắc chắn muốn xóa chi nhánh này? Xóa chi nhánh sẽ xóa tất cả sân thuộc chi nhánh
+          </Alert>
+          {selectedBranch && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Tên chi nhánh:
+              </Typography>
+              <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                {selectedBranch.branchName}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                Địa chỉ: {selectedBranch.address}
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setOpenDeleteDialog(false)} color="inherit">
+            Hủy
+          </Button>
+          <Button
+            onClick={handleConfirmDelete}
+            variant="contained"
+            color="error"
+            disabled={deleteBranchMutation.isPending}
+            startIcon={<Delete />}
+          >
+            {deleteBranchMutation.isPending ? 'Đang xóa...' : 'Xóa'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* View Dialog */}
       <ViewBranchDialog
