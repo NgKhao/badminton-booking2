@@ -1313,3 +1313,48 @@ export const useCreateBranchMutation = (
     ...options,
   });
 };
+
+export interface UpdateBranchRequest {
+  branchName?: string;
+  address?: string;
+  phone?: string;
+  isActive?: boolean;
+}
+
+export interface UpdateBranchResponse {
+  messenger: string;
+  status: number;
+  detail: Branch;
+  instance: string;
+}
+
+/**
+ * Hook để cập nhật thông tin chi nhánh (admin only)
+ * PUT /admin/branches/{branchId}
+ */
+export const useUpdateBranchMutation = (
+  options?: UseMutationOptions<Branch, AxiosError, { branchId: number; data: UpdateBranchRequest }>
+) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      branchId,
+      data,
+    }: {
+      branchId: number;
+      data: UpdateBranchRequest;
+    }): Promise<Branch> => {
+      const response: AxiosResponse<UpdateBranchResponse> = await api.put(
+        `/admin/branches/${branchId}`,
+        data
+      );
+      return response.data.detail;
+    },
+    onSuccess: () => {
+      // Invalidate branches list to trigger refetch
+      queryClient.invalidateQueries({ queryKey: ['branches'] });
+    },
+    ...options,
+  });
+};

@@ -29,6 +29,8 @@ import {
   Select,
   MenuItem,
   Snackbar,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import {
   Visibility,
@@ -41,12 +43,14 @@ import {
   Person,
   Email,
   Add,
+  Edit,
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import {
   useBranches,
   useBranchManager,
   useCreateBranchMutation,
+  useUpdateBranchMutation,
   type Branch,
 } from '../../hooks/useApi';
 
@@ -77,6 +81,7 @@ export const AdminBranchesPage: React.FC = () => {
   // Dialog states
   const [openViewDialog, setOpenViewDialog] = useState(false);
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
+  const [openEditDialog, setOpenEditDialog] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
 
   // Form state for creating branch
@@ -84,6 +89,7 @@ export const AdminBranchesPage: React.FC = () => {
     branchName: '',
     address: '',
     phone: '',
+    isActive: true,
   });
 
   // Snackbar state
@@ -109,6 +115,27 @@ export const AdminBranchesPage: React.FC = () => {
       setSnackbar({
         open: true,
         message: `Lỗi khi tạo chi nhánh: ${error.message}`,
+        severity: 'error',
+      });
+    },
+  });
+
+  // Mutation hook for updating branch
+  const updateBranchMutation = useUpdateBranchMutation({
+    onSuccess: () => {
+      setSnackbar({
+        open: true,
+        message: 'Cập nhật chi nhánh thành công!',
+        severity: 'success',
+      });
+      setOpenEditDialog(false);
+      resetForm();
+      refetch();
+    },
+    onError: (error) => {
+      setSnackbar({
+        open: true,
+        message: `Lỗi khi cập nhật chi nhánh: ${error.message}`,
         severity: 'error',
       });
     },
@@ -149,11 +176,23 @@ export const AdminBranchesPage: React.FC = () => {
     setOpenCreateDialog(true);
   };
 
+  const handleEdit = (branch: Branch) => {
+    setSelectedBranch(branch);
+    setFormData({
+      branchName: branch.branchName,
+      address: branch.address,
+      phone: branch.phone,
+      isActive: branch.isActive,
+    });
+    setOpenEditDialog(true);
+  };
+
   const resetForm = () => {
     setFormData({
       branchName: '',
       address: '',
       phone: '',
+      isActive: true,
     });
   };
 
@@ -179,8 +218,17 @@ export const AdminBranchesPage: React.FC = () => {
       return;
     }
 
-    // Create branch
-    createBranchMutation.mutate(formData);
+    if (selectedBranch) {
+      // Update branch
+      updateBranchMutation.mutate({
+        branchId: selectedBranch.id,
+        data: formData,
+      });
+    } else {
+      // Create branch
+      const { isActive, ...createData } = formData;
+      createBranchMutation.mutate(createData);
+    }
   };
 
   // Pagination handlers
@@ -395,6 +443,15 @@ export const AdminBranchesPage: React.FC = () => {
                           <Visibility fontSize="small" />
                         </IconButton>
                       </Tooltip>
+                      <Tooltip title="Chỉnh sửa">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleEdit(branch)}
+                          sx={{ color: 'warning.main' }}
+                        >
+                          <Edit fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                     </Box>
                   </TableCell>
                 </TableRow>
@@ -511,6 +568,82 @@ export const AdminBranchesPage: React.FC = () => {
             disabled={createBranchMutation.isPending}
           >
             {createBranchMutation.isPending ? 'Đang tạo...' : 'Tạo chi nhánh'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Branch Dialog */}
+      <Dialog
+        open={openEditDialog}
+        onClose={() => setOpenEditDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Chỉnh sửa chi nhánh</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label="Tên chi nhánh"
+              value={formData.branchName}
+              onChange={(e) => setFormData({ ...formData, branchName: e.target.value })}
+              fullWidth
+              required
+              placeholder="VD: Chi nhánh Quận 1"
+            />
+
+            <TextField
+              label="Địa chỉ"
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              fullWidth
+              required
+              multiline
+              rows={2}
+              placeholder="VD: 123 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP.HCM"
+            />
+
+            <TextField
+              label="Số điện thoại"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              fullWidth
+              required
+              placeholder="VD: 0912345678"
+              inputProps={{
+                maxLength: 11,
+              }}
+            />
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.isActive}
+                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                  color="success"
+                />
+              }
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="body2">Trạng thái hoạt động</Typography>
+                  <Chip
+                    label={formData.isActive ? 'Hoạt động' : 'Không hoạt động'}
+                    size="small"
+                    color={formData.isActive ? 'success' : 'error'}
+                    variant="outlined"
+                  />
+                </Box>
+              }
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 3 }}>
+          <Button onClick={() => setOpenEditDialog(false)}>Hủy</Button>
+          <Button
+            onClick={handleSave}
+            variant="contained"
+            disabled={updateBranchMutation.isPending}
+          >
+            {updateBranchMutation.isPending ? 'Đang cập nhật...' : 'Cập nhật'}
           </Button>
         </DialogActions>
       </Dialog>
