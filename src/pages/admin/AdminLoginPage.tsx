@@ -43,20 +43,20 @@ export const AdminLoginPage: React.FC = () => {
     setError,
   } = useForm<AdminLoginFormData>();
 
-  // Helper function để check if user is admin
-  const isAdmin = (role?: string): boolean => {
-    return role === 'ADMIN' || role === 'admin';
+  // Helper function để check if user is admin or staff
+  const isAdminOrStaff = (role?: string): boolean => {
+    return role === 'ADMIN' || role === 'admin' || role === 'STAFF' || role === 'staff';
   };
 
-  // Login mutation cho admin
+  // Login mutation cho admin và staff
   const loginMutation = useLoginMutation({
     onSuccess: (data) => {
-      console.log('Admin login response:', data);
+      console.log('Admin/Staff login response:', data);
 
-      // Kiểm tra role có phải là admin không
-      if (!isAdmin(data.detail.userInfo.role)) {
+      // Kiểm tra role có phải là admin hoặc staff không
+      if (!isAdminOrStaff(data.detail.userInfo.role)) {
         setError('root', {
-          message: 'Bạn không có quyền truy cập trang admin',
+          message: 'Bạn không có quyền truy cập trang này',
         });
         return;
       }
@@ -66,7 +66,7 @@ export const AdminLoginPage: React.FC = () => {
         user_id: 0, // Sẽ được cập nhật từ API khác
         email: data.detail.userInfo.email,
         full_name: data.detail.userInfo.fullName,
-        role: 'admin' as const,
+        role: data.detail.userInfo.role.toLowerCase() as 'admin' | 'staff',
         is_active: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -77,13 +77,24 @@ export const AdminLoginPage: React.FC = () => {
         refreshToken: data.detail.token.refreshToken,
       });
 
-      // Chuyển hướng đến trang quản lý sân
-      navigate('/admin/courts');
+      // Chuyển hướng dựa trên role
+      const userRole = data.detail.userInfo.role.toUpperCase();
+      if (userRole === 'STAFF') {
+        // Staff chỉ được truy cập trang quản lý đặt sân
+        navigate('/admin/bookings');
+      } else {
+        // Admin có thể truy cập tất cả
+        navigate('/admin/courts');
+      }
     },
     onError: (error) => {
-      console.error('Admin login error:', error);
+      console.error('Admin/Staff login error:', error);
+      const errorMessage =
+        (error as { response?: { data?: { messenger?: string } } }).response?.data?.messenger ||
+        error.message ||
+        'Đăng nhập thất bại';
       setError('root', {
-        message: error.response?.data?.messenger || error.message || 'Đăng nhập thất bại',
+        message: errorMessage,
       });
     },
   });
@@ -128,7 +139,7 @@ export const AdminLoginPage: React.FC = () => {
               textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
             }}
           >
-            Admin Portal
+            Quản Lý Portal
           </Typography>
           <Typography
             variant="h6"
@@ -154,7 +165,7 @@ export const AdminLoginPage: React.FC = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
               <Security color="primary" sx={{ mr: 2, fontSize: 32 }} />
               <Typography variant="h5" component="h2" fontWeight="bold">
-                Đăng Nhập Admin
+                Đăng Nhập Hệ Thống
               </Typography>
             </Box>
 
@@ -167,7 +178,7 @@ export const AdminLoginPage: React.FC = () => {
             <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
               <TextField
                 fullWidth
-                label="Email Admin"
+                label="Email"
                 type="email"
                 margin="normal"
                 {...register('email', {
@@ -249,12 +260,12 @@ export const AdminLoginPage: React.FC = () => {
                   },
                 }}
               >
-                {loginMutation.isPending ? 'Đang đăng nhập...' : 'Đăng Nhập Admin'}
+                {loginMutation.isPending ? 'Đang đăng nhập...' : 'Đăng Nhập'}
               </Button>
 
               <Box sx={{ textAlign: 'center', mt: 2 }}>
                 <Typography variant="body2" color="text.secondary">
-                  Chỉ dành cho quản trị viên hệ thống
+                  Dành cho quản trị viên và nhân viên hệ thống
                 </Typography>
               </Box>
             </Box>

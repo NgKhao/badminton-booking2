@@ -1,5 +1,5 @@
 // Enums based on database
-export type UserRole = 'customer' | 'admin';
+export type UserRole = 'customer' | 'admin' | 'staff';
 export type CourtStatus = 'available' | 'maintenance' | 'unavailable';
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled';
 export type EmailStatus = 'sent' | 'failed' | 'pending';

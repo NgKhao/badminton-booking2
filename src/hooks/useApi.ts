@@ -38,7 +38,7 @@ export interface LoginResponse {
     userInfo: {
       fullName: string;
       email: string;
-      role: 'CUSTOMER' | 'ADMIN';
+      role: 'CUSTOMER' | 'ADMIN' | 'STAFF';
     };
     token: {
       type: string;
@@ -185,7 +185,7 @@ export interface UserProfile {
   fullName: string;
   numberPhone: string;
   active: boolean;
-  roleName: 'CUSTOMER' | 'ADMIN';
+  roleName: 'CUSTOMER' | 'ADMIN' | 'STAFF';
 }
 
 /**
@@ -660,7 +660,7 @@ export interface Customer {
   fullName: string;
   numberPhone: string;
   active: boolean;
-  roleName: 'CUSTOMER' | 'ADMIN';
+  roleName: 'CUSTOMER' | 'ADMIN' | 'STAFF';
 }
 
 export interface CustomerListResponse {
@@ -795,7 +795,7 @@ export interface CreateCustomerResponse {
     fullName: string;
     numberPhone: string;
     active: boolean;
-    roleName: 'CUSTOMER' | 'ADMIN';
+    roleName: 'CUSTOMER' | 'ADMIN' | 'STAFF';
   };
   instance: string;
 }

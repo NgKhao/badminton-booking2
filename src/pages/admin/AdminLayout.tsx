@@ -52,30 +52,35 @@ const menuItems = [
     icon: <SportsTennis />,
     path: '/admin/courts',
     description: 'Quản lý thông tin sân',
+    roles: ['admin'], // Chỉ admin
   },
   {
     text: 'Quản lý đặt sân',
     icon: <EventNote />,
     path: '/admin/bookings',
     description: 'Xử lý đặt sân',
+    roles: ['admin', 'staff'], // Admin và Staff
   },
   {
     text: 'Quản lý khách hàng',
     icon: <People />,
     path: '/admin/customers',
     description: 'Thông tin khách hàng',
+    roles: ['admin'], // Chỉ admin
   },
   {
     text: 'Quản lý chi nhánh',
     icon: <Store />,
     path: '/admin/branches',
     description: 'Thông tin chi nhánh',
+    roles: ['admin'], // Chỉ admin
   },
   {
     text: 'Báo cáo & Thống kê',
     icon: <Analytics />,
     path: '/admin/analytics',
     description: 'Phân tích doanh thu',
+    roles: ['admin', 'staff'], // Admin và Staff
   },
 ];
 
@@ -88,6 +93,10 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuthStore();
+
+  // Filter menu items based on user role
+  const userRole = user?.role || 'customer';
+  const availableMenuItems = menuItems.filter((item) => item.roles.includes(userRole));
 
   // React Query logout mutation
   const logoutMutation = useLogoutMutation({
@@ -211,7 +220,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           </Typography>
         </Box>
         <Typography variant="body2" sx={{ opacity: 0.9 }}>
-          Quản trị viên
+          {userRole === 'admin' ? 'Quản trị viên' : 'Nhân viên'}
         </Typography>
       </Box>
 
@@ -219,7 +228,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
       {/* Menu Items */}
       <List sx={{ px: 2, py: 1 }}>
-        {menuItems.map((item) => {
+        {availableMenuItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>

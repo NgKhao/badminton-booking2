@@ -767,17 +767,29 @@ export const AdminCourtsPage: React.FC = () => {
                   <TableCell align="center">
                     <Box sx={{ display: 'flex', gap: 1 }}>
                       <Tooltip title="Xem chi tiết">
-                        <IconButton size="small" onClick={() => handleView(court)}>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleView(court)}
+                          sx={{ color: 'info.main' }}
+                        >
                           <Visibility fontSize="small" />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Chỉnh sửa">
-                        <IconButton size="small" onClick={() => handleEdit(court)}>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleEdit(court)}
+                          sx={{ color: 'warning.main' }}
+                        >
                           <Edit fontSize="small" />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Xóa">
-                        <IconButton size="small" onClick={() => handleDelete(court)} color="error">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleDelete(court)}
+                          sx={{ color: 'error.main' }}
+                        >
                           <Delete fontSize="small" />
                         </IconButton>
                       </Tooltip>

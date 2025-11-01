@@ -83,10 +83,16 @@ export const Navbar: React.FC<NavbarProps> = () => {
     { label: 'Xem sân', path: '/courts', icon: SportsTennis },
   ];
 
+  const staffNavItems = [
+    { label: 'Quản lý', path: '/admin/bookings', icon: EventNote },
+    { label: 'Xem sân', path: '/courts', icon: SportsTennis },
+  ];
+
   // Choose navigation items based on user role
   const getNavItems = () => {
     if (!isAuthenticated) return navItems;
     if (user?.role === 'admin') return adminNavItems;
+    if (user?.role === 'staff') return staffNavItems;
     return authenticatedNavItems;
   };
 
