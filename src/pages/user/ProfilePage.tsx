@@ -33,6 +33,7 @@ import {
   useUpdateProfileMutation,
   useChangePasswordMutation,
   useStaffBranch,
+  useUpdateStaffBranchMutation,
   type ChangePasswordRequest,
   type UserProfile,
 } from '../../hooks/useApi';
@@ -98,6 +99,23 @@ export const ProfilePage: React.FC = () => {
   const isStaff = userData?.roleName === 'STAFF';
   const staffBranchQuery = useStaffBranch();
   const staffBranchData = isStaff ? staffBranchQuery.data : undefined;
+
+  // Mutation for updating staff branch phone
+  const updateStaffBranchMutation = useUpdateStaffBranchMutation({
+    onSuccess: () => {
+      setSuccessMessage('Cập nhật số điện thoại thành công!');
+      setIsEditing(false);
+      staffBranchQuery.refetch(); // Refetch staff branch data
+      setTimeout(() => setSuccessMessage(''), 3000);
+    },
+    onError: (error) => {
+      const errorMsg =
+        (error as { response?: { data?: { messenger?: string } } }).response?.data?.messenger ||
+        'Có lỗi xảy ra khi cập nhật số điện thoại';
+      setErrorMessage(errorMsg);
+      setTimeout(() => setErrorMessage(''), 5000);
+    },
+  });
 
   const updateProfileMutation = useUpdateProfileMutation({
     onSuccess: (data) => {
@@ -192,6 +210,13 @@ export const ProfilePage: React.FC = () => {
       return;
     }
 
+    // Validate phone number
+    if (profileForm.phone && !/^[0-9]{10,11}$/.test(profileForm.phone)) {
+      setErrorMessage('Số điện thoại không hợp lệ (10-11 chữ số)');
+      setTimeout(() => setErrorMessage(''), 3000);
+      return;
+    }
+
     // Get userId from current user data
     const userId = user && 'userId' in user ? user.userId : user?.user_id;
 
@@ -201,13 +226,22 @@ export const ProfilePage: React.FC = () => {
       return;
     }
 
-    updateProfileMutation.mutate({
-      userId,
-      data: {
-        fullName: profileForm.fullName,
-        numberPhone: profileForm.phone,
-      },
-    });
+    // If STAFF, update branch phone instead of user phone
+    if (isStaff && staffBranchData) {
+      updateStaffBranchMutation.mutate({
+        branchId: staffBranchData.id,
+        phone: profileForm.phone,
+      });
+    } else {
+      // Normal user update
+      updateProfileMutation.mutate({
+        userId,
+        data: {
+          fullName: profileForm.fullName,
+          numberPhone: profileForm.phone,
+        },
+      });
+    }
   };
 
   const handleChangePassword = () => {
@@ -395,14 +429,10 @@ export const ProfilePage: React.FC = () => {
                   name="phone"
                   value={profileForm.phone}
                   onChange={handleProfileInputChange}
-                  disabled={!isEditing || isStaff}
+                  disabled={!isEditing}
                   variant="outlined"
                   placeholder="Nhập số điện thoại"
-                  helperText={
-                    isStaff
-                      ? 'Số điện thoại lấy từ thông tin chi nhánh, không thể chỉnh sửa'
-                      : undefined
-                  }
+                  helperText={isStaff ? 'Số điện thoại của chi nhánh, có thể chỉnh sửa' : undefined}
                 />
               </Box>
             </Box>
@@ -451,7 +481,7 @@ export const ProfilePage: React.FC = () => {
                 variant="outlined"
                 startIcon={<Cancel />}
                 onClick={handleEditToggle}
-                disabled={updateProfileMutation.isPending}
+                disabled={updateProfileMutation.isPending || updateStaffBranchMutation.isPending}
               >
                 Hủy
               </Button>
@@ -459,9 +489,11 @@ export const ProfilePage: React.FC = () => {
                 variant="contained"
                 startIcon={<Save />}
                 onClick={handleSaveProfile}
-                disabled={updateProfileMutation.isPending}
+                disabled={updateProfileMutation.isPending || updateStaffBranchMutation.isPending}
               >
-                {updateProfileMutation.isPending ? 'Đang lưu...' : 'Lưu thay đổi'}
+                {updateProfileMutation.isPending || updateStaffBranchMutation.isPending
+                  ? 'Đang lưu...'
+                  : 'Lưu thay đổi'}
               </Button>
             </Box>
           )}

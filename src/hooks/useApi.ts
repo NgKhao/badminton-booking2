@@ -1306,6 +1306,49 @@ export const useStaffBranch = (options?: UseQueryOptions<StaffBranch, AxiosError
   });
 };
 
+// Staff branch update interface
+export interface UpdateStaffBranchRequest {
+  phone: string;
+}
+
+export interface UpdateStaffBranchResponse {
+  messenger: string;
+  status: number;
+  detail: StaffBranch;
+  instance: string;
+}
+
+/**
+ * Hook để cập nhật thông tin chi nhánh của staff hiện tại
+ * PUT /admin/branches/{branchId}
+ */
+export const useUpdateStaffBranchMutation = (
+  options?: UseMutationOptions<StaffBranch, AxiosError, { branchId: number; phone: string }>
+) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      branchId,
+      phone,
+    }: {
+      branchId: number;
+      phone: string;
+    }): Promise<StaffBranch> => {
+      const response: AxiosResponse<UpdateStaffBranchResponse> = await api.put(
+        `/admin/branches/${branchId}`,
+        { phone }
+      );
+      return response.data.detail;
+    },
+    onSuccess: () => {
+      // Invalidate staff branch cache to trigger refetch
+      queryClient.invalidateQueries({ queryKey: ['staff-branch'] });
+    },
+    ...options,
+  });
+};
+
 // Branch create/update types
 export interface CreateBranchRequest {
   branchName: string;
