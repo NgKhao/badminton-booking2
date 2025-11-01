@@ -59,7 +59,9 @@ import {
   useDeleteCourtMutation,
   type CreateCourtRequest,
   type UpdateCourtRequest,
+  useBranches,
 } from '../../hooks/useApi';
+import { useAuthStore } from '../../store/authStore';
 
 interface CourtFormData {
   courtName: string;
@@ -72,10 +74,19 @@ interface CourtFormData {
 
 export const AdminCourtsPage: React.FC = () => {
   const theme = useTheme();
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === 'admin';
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(5);
+
+  // Fetch branches for admin filter (only for admin users)
+  const { data: branchesData } = useBranches({ page: 0, size: 100 });
+  const branches = React.useMemo(
+    () => (isAdmin ? branchesData?.branches || [] : []),
+    [isAdmin, branchesData?.branches]
+  );
 
   // React Query hook for fetching admin courts
   const {
@@ -153,6 +164,7 @@ export const AdminCourtsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
+  const [filterBranch, setFilterBranch] = useState<string>('all');
 
   // Dialog states
   const [openDialog, setOpenDialog] = useState(false);
@@ -190,7 +202,8 @@ export const AdminCourtsPage: React.FC = () => {
       filtered = filtered.filter(
         (court) =>
           court.courtName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (court.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
+          (court.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
+          (court.branchName?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
       );
     }
 
@@ -202,8 +215,12 @@ export const AdminCourtsPage: React.FC = () => {
       filtered = filtered.filter((court) => court.courtType === filterType);
     }
 
+    if (filterBranch !== 'all') {
+      filtered = filtered.filter((court) => court.branchId?.toString() === filterBranch);
+    }
+
     setFilteredCourts(filtered);
-  }, [courts, searchTerm, filterStatus, filterType]);
+  }, [courts, searchTerm, filterStatus, filterType, filterBranch]);
 
   // Helper functions
   const getStatusColor = (status: string): 'success' | 'warning' | 'error' | 'default' => {
@@ -632,6 +649,24 @@ export const AdminCourtsPage: React.FC = () => {
               </Select>
             </FormControl>
 
+            {isAdmin && branches.length > 0 && (
+              <FormControl size="small" sx={{ minWidth: 180 }}>
+                <InputLabel>Chi nhánh</InputLabel>
+                <Select
+                  value={filterBranch}
+                  label="Chi nhánh"
+                  onChange={(e) => setFilterBranch(e.target.value)}
+                >
+                  <MenuItem value="all">Tất cả chi nhánh</MenuItem>
+                  {branches.map((branch) => (
+                    <MenuItem key={branch.id} value={branch.id.toString()}>
+                      {branch.branchName}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+
             <Button
               variant="outlined"
               startIcon={<Refresh />}
@@ -639,6 +674,7 @@ export const AdminCourtsPage: React.FC = () => {
                 setSearchTerm('');
                 setFilterStatus('all');
                 setFilterType('all');
+                setFilterBranch('all');
               }}
             >
               Làm mới
