@@ -32,6 +32,7 @@ import {
   useCurrentUser,
   useUpdateProfileMutation,
   useChangePasswordMutation,
+  useStaffBranch,
   type ChangePasswordRequest,
   type UserProfile,
 } from '../../hooks/useApi';
@@ -55,7 +56,7 @@ const getFullName = (user: User | UserProfile | null): string => {
 
 const getPhone = (user: User | UserProfile | null): string => {
   if (!user) return '';
-  return 'numberPhone' in user ? user.numberPhone : user.phone || '';
+  return 'numberPhone' in user ? user.numberPhone || '' : user.phone || '';
 };
 
 const getIsActive = (user: User | UserProfile | null): boolean => {
@@ -66,7 +67,9 @@ const getIsActive = (user: User | UserProfile | null): boolean => {
 const getRoleName = (user: User | UserProfile | null): string => {
   if (!user) return 'CUSTOMER';
   if ('roleName' in user) {
-    return user.roleName === 'ADMIN' ? 'admin' : 'customer';
+    if (user.roleName === 'ADMIN') return 'admin';
+    if (user.roleName === 'STAFF') return 'staff';
+    return 'customer';
   }
   return user.role || 'customer';
 };
@@ -91,13 +94,18 @@ export const ProfilePage: React.FC = () => {
 
   const { data: userData, isLoading, refetch } = useCurrentUser();
 
+  // Fetch staff branch info if user is STAFF
+  const isStaff = userData?.roleName === 'STAFF';
+  const staffBranchQuery = useStaffBranch();
+  const staffBranchData = isStaff ? staffBranchQuery.data : undefined;
+
   const updateProfileMutation = useUpdateProfileMutation({
     onSuccess: (data) => {
       setSuccessMessage('Cập nhật hồ sơ thành công!');
       setIsEditing(false);
       updateUser({
         full_name: data.fullName,
-        phone: data.numberPhone,
+        phone: data.numberPhone || undefined,
       });
       setTimeout(() => setSuccessMessage(''), 3000);
       refetch();
@@ -134,14 +142,22 @@ export const ProfilePage: React.FC = () => {
 
   const user = userData || authUser;
 
+  // Update form data when user or staff branch data changes
   useEffect(() => {
     if (user) {
+      let phone = getPhone(user);
+
+      // If user is STAFF and has no phone, use branch phone
+      if (isStaff && !phone && staffBranchData?.phone) {
+        phone = staffBranchData.phone;
+      }
+
       setProfileForm({
         fullName: getFullName(user),
-        phone: getPhone(user),
+        phone: phone,
       });
     }
-  }, [user]);
+  }, [user, isStaff, staffBranchData]);
 
   const handleProfileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -262,9 +278,29 @@ export const ProfilePage: React.FC = () => {
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Chip
-                  icon={getRoleName(user) === 'admin' ? <AdminPanelSettings /> : <Person />}
-                  label={getRoleName(user) === 'admin' ? 'Quản trị viên' : 'Khách hàng'}
-                  color={getRoleName(user) === 'admin' ? 'error' : 'primary'}
+                  icon={
+                    getRoleName(user) === 'admin' ? (
+                      <AdminPanelSettings />
+                    ) : getRoleName(user) === 'staff' ? (
+                      <AdminPanelSettings />
+                    ) : (
+                      <Person />
+                    )
+                  }
+                  label={
+                    getRoleName(user) === 'admin'
+                      ? 'Quản trị viên'
+                      : getRoleName(user) === 'staff'
+                        ? 'Nhân viên chi nhánh'
+                        : 'Khách hàng'
+                  }
+                  color={
+                    getRoleName(user) === 'admin'
+                      ? 'error'
+                      : getRoleName(user) === 'staff'
+                        ? 'warning'
+                        : 'primary'
+                  }
                   size="small"
                 />
               </Box>
@@ -282,6 +318,33 @@ export const ProfilePage: React.FC = () => {
           </Box>
 
           <Divider sx={{ mb: 3 }} />
+
+          {/* Staff Branch Info */}
+          {isStaff && staffBranchData && (
+            <>
+              <Box sx={{ bgcolor: 'warning.50', p: 2, borderRadius: 2, mb: 3 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  📍 Thông tin chi nhánh
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Chi nhánh:</strong> {staffBranchData.branchName}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Địa chỉ:</strong> {staffBranchData.address}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Trạng thái:</strong>{' '}
+                  <Chip
+                    label={staffBranchData.isActive ? 'Hoạt động' : 'Không hoạt động'}
+                    size="small"
+                    color={staffBranchData.isActive ? 'success' : 'error'}
+                    sx={{ ml: 1 }}
+                  />
+                </Typography>
+              </Box>
+              <Divider sx={{ mb: 3 }} />
+            </>
+          )}
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             <Box>
@@ -324,6 +387,7 @@ export const ProfilePage: React.FC = () => {
                   <Phone sx={{ mr: 1, color: 'text.secondary' }} />
                   <Typography variant="subtitle2" color="text.secondary">
                     Số điện thoại
+                    {isStaff && staffBranchData && ' (từ chi nhánh)'}
                   </Typography>
                 </Box>
                 <TextField
@@ -331,9 +395,14 @@ export const ProfilePage: React.FC = () => {
                   name="phone"
                   value={profileForm.phone}
                   onChange={handleProfileInputChange}
-                  disabled={!isEditing}
+                  disabled={!isEditing || isStaff}
                   variant="outlined"
                   placeholder="Nhập số điện thoại"
+                  helperText={
+                    isStaff
+                      ? 'Số điện thoại lấy từ thông tin chi nhánh, không thể chỉnh sửa'
+                      : undefined
+                  }
                 />
               </Box>
             </Box>
@@ -348,7 +417,13 @@ export const ProfilePage: React.FC = () => {
                 </Box>
                 <TextField
                   fullWidth
-                  value={getRoleName(user) === 'admin' ? 'Quản trị viên' : 'Khách hàng'}
+                  value={
+                    getRoleName(user) === 'admin'
+                      ? 'Quản trị viên'
+                      : getRoleName(user) === 'staff'
+                        ? 'Nhân viên chi nhánh'
+                        : 'Khách hàng'
+                  }
                   disabled
                   variant="outlined"
                 />

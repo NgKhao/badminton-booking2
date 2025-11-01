@@ -167,12 +167,12 @@ export interface UserProfileResponse {
   status: number;
   detail: {
     userId: number;
-    customerId: number;
+    customerId: number | null;
     email: string;
     fullName: string;
-    numberPhone: string;
+    numberPhone: string | null;
     active: boolean;
-    roleName: 'CUSTOMER' | 'ADMIN';
+    roleName: 'CUSTOMER' | 'ADMIN' | 'STAFF';
   };
   instance: string;
 }
@@ -180,10 +180,10 @@ export interface UserProfileResponse {
 // Normalized UserProfile type for frontend use
 export interface UserProfile {
   userId: number;
-  customerId: number;
+  customerId: number | null;
   email: string;
   fullName: string;
-  numberPhone: string;
+  numberPhone: string | null;
   active: boolean;
   roleName: 'CUSTOMER' | 'ADMIN' | 'STAFF';
 }
@@ -1270,6 +1270,38 @@ export const useBranchManager = (
       return response.data.detail;
     },
     enabled: !!managerId,
+    ...options,
+  });
+};
+
+// Staff branch interface
+export interface StaffBranch {
+  id: number;
+  branchName: string;
+  address: string;
+  phone: string;
+  isActive: boolean;
+  managerId: number;
+}
+
+export interface StaffBranchResponse {
+  messenger: string;
+  status: number;
+  detail: StaffBranch;
+  instance: string;
+}
+
+/**
+ * Hook để lấy thông tin chi nhánh của staff hiện tại
+ * GET /admin/branches/me
+ */
+export const useStaffBranch = (options?: UseQueryOptions<StaffBranch, AxiosError>) => {
+  return useQuery({
+    queryKey: ['staff-branch'],
+    queryFn: async (): Promise<StaffBranch> => {
+      const response: AxiosResponse<StaffBranchResponse> = await api.get(`/admin/branches/me`);
+      return response.data.detail;
+    },
     ...options,
   });
 };
