@@ -661,6 +661,7 @@ export const AdminCourtsPage: React.FC = () => {
               <TableRow>
                 <TableCell>Sân</TableCell>
                 <TableCell>Hình ảnh</TableCell>
+                <TableCell>Chi nhánh</TableCell>
                 <TableCell>Loại sân</TableCell>
                 <TableCell>Trạng thái</TableCell>
                 <TableCell>Giá/giờ</TableCell>
@@ -723,6 +724,28 @@ export const AdminCourtsPage: React.FC = () => {
                           borderColor: 'divider',
                         }}
                       />
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {court.branchName ? (
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 'medium', lineHeight: 1.2 }}>
+                          {court.branchName}
+                        </Typography>
+                        {court.branchPhone && (
+                          <Typography variant="caption" color="text.secondary">
+                            {court.branchPhone}
+                          </Typography>
+                        )}
+                      </Box>
+                    ) : (
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ fontStyle: 'italic' }}
+                      >
+                        Chưa gán chi nhánh
+                      </Typography>
                     )}
                   </TableCell>
                   <TableCell>
@@ -1048,6 +1071,30 @@ export const AdminCourtsPage: React.FC = () => {
         <DialogContent>
           {selectedCourt && (
             <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {selectedCourt.branchName && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Chi nhánh
+                  </Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+                    {selectedCourt.branchName}
+                  </Typography>
+                  {selectedCourt.branchAddress && (
+                    <Typography variant="caption" color="text.secondary">
+                      {selectedCourt.branchAddress}
+                    </Typography>
+                  )}
+                  {selectedCourt.branchPhone && (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: 'block', mt: 0.5 }}
+                    >
+                      SĐT: {selectedCourt.branchPhone}
+                    </Typography>
+                  )}
+                </Box>
+              )}
               <Box>
                 <Typography variant="body2" color="text.secondary">
                   Loại sân

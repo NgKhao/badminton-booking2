@@ -54,7 +54,7 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     return <Navigate to="/admin/login" replace />;
   }
 
-  if (user?.role !== 'admin') {
+  if (user?.role !== 'admin' && user?.role !== 'staff') {
     return <Navigate to="/" replace />;
   }
 

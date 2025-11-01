@@ -279,6 +279,10 @@ export interface Court {
   images?: string[];
   isActive: boolean;
   status: 'AVAILABLE' | 'MAINTENANCE' | 'UNAVAILABLE';
+  branchId?: number;
+  branchName?: string;
+  branchAddress?: string;
+  branchPhone?: string;
 }
 
 // API Response types for courts

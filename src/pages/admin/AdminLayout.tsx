@@ -52,7 +52,7 @@ const menuItems = [
     icon: <SportsTennis />,
     path: '/admin/courts',
     description: 'Quản lý thông tin sân',
-    roles: ['admin'], // Chỉ admin
+    roles: ['admin', 'staff'], // Admin và Staff
   },
   {
     text: 'Quản lý đặt sân',
