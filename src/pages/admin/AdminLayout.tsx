@@ -59,7 +59,7 @@ const menuItems = [
     icon: <EventNote />,
     path: '/admin/bookings',
     description: 'Xử lý đặt sân',
-    roles: ['admin', 'staff'], // Admin và Staff
+    roles: ['staff'], // Admin và Staff
   },
   {
     text: 'Quản lý khách hàng',

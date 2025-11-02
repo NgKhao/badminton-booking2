@@ -14,7 +14,7 @@ import {
   useProcessPaymentMutation,
   useUpdateBookingStatusMutation,
   useCreateAdminBookingMutation,
-  useCourts,
+  useAdminCourts,
   useCustomers,
 } from '../../hooks/useApi';
 import type {
@@ -156,7 +156,7 @@ export const AdminBookingsPage: React.FC = () => {
   const { data: adminBookings = [], isLoading, error, refetch } = useAdminBookings(apiParams);
 
   // Fetch courts and customers using API
-  const { data: courtsData } = useCourts();
+  const { data: courtsData } = useAdminCourts();
   const { data: customersData } = useCustomers();
 
   // Convert API Court format to component expected format
