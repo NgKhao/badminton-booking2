@@ -432,6 +432,7 @@ export interface CreateCourtRequest {
   courtType: 'INDOOR' | 'OUTDOOR';
   hourlyRate: number;
   description?: string;
+  branchId?: number; // Required for admin when creating court
 }
 
 export interface CreateCourtFormRequest {
@@ -453,6 +454,7 @@ export interface UpdateCourtRequest {
   description?: string;
   isActive?: boolean;
   status?: 'AVAILABLE' | 'MAINTENANCE' | 'UNAVAILABLE';
+  branchId?: number; // Allow updating branch assignment
 }
 
 export interface UpdateCourtFormRequest {

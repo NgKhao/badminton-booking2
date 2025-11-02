@@ -70,6 +70,7 @@ interface CourtFormData {
   hourlyRate: number;
   description: string;
   isActive: boolean;
+  branchId?: number; // Optional for admin to select branch
 }
 
 export const AdminCourtsPage: React.FC = () => {
@@ -325,6 +326,7 @@ export const AdminCourtsPage: React.FC = () => {
       hourlyRate: 0,
       description: '',
       isActive: true,
+      branchId: undefined,
     });
     setSelectedFile(null);
     setImagePreview('');
@@ -341,6 +343,7 @@ export const AdminCourtsPage: React.FC = () => {
       hourlyRate: court.hourlyRate,
       description: court.description ?? '',
       isActive: court.isActive,
+      branchId: court.branchId,
     });
 
     // Set preview for existing image
@@ -373,6 +376,16 @@ export const AdminCourtsPage: React.FC = () => {
       return;
     }
 
+    // Validate branch selection for admin
+    if (isAdmin && !formData.branchId) {
+      setSnackbar({
+        open: true,
+        message: 'Vui lòng chọn chi nhánh cho sân',
+        severity: 'error',
+      });
+      return;
+    }
+
     // Validate status/isActive combination
     const validation = validateStatusChange(formData.status, formData.isActive);
     if (!validation.isValid) {
@@ -385,13 +398,14 @@ export const AdminCourtsPage: React.FC = () => {
     }
 
     if (editMode && selectedCourt) {
-      // Update court
+      // Update court - branchId cannot be changed
       const courtDTO: UpdateCourtRequest = {
         courtName: formData.courtName,
         courtType: formData.courtType,
         hourlyRate: formData.hourlyRate,
         description: formData.description,
         isActive: formData.isActive,
+        // Don't include branchId in update as it's not editable
       };
 
       updateCourtMutation.mutate({
@@ -408,6 +422,7 @@ export const AdminCourtsPage: React.FC = () => {
         courtType: formData.courtType,
         hourlyRate: formData.hourlyRate,
         description: formData.description,
+        branchId: formData.branchId,
       };
 
       createCourtMutation.mutate({
@@ -622,7 +637,7 @@ export const AdminCourtsPage: React.FC = () => {
               sx={{ minWidth: 250 }}
             />
 
-            <FormControl size="small" sx={{ minWidth: 150 }}>
+            <FormControl size="small" sx={{ minWidth: 100 }}>
               <InputLabel>Trạng thái</InputLabel>
               <Select
                 value={filterStatus}
@@ -636,7 +651,7 @@ export const AdminCourtsPage: React.FC = () => {
               </Select>
             </FormControl>
 
-            <FormControl size="small" sx={{ minWidth: 150 }}>
+            <FormControl size="small" sx={{ minWidth: 100 }}>
               <InputLabel>Loại sân</InputLabel>
               <Select
                 value={filterType}
@@ -650,7 +665,7 @@ export const AdminCourtsPage: React.FC = () => {
             </FormControl>
 
             {isAdmin && branches.length > 0 && (
-              <FormControl size="small" sx={{ minWidth: 180 }}>
+              <FormControl size="small" sx={{ minWidth: 100 }}>
                 <InputLabel>Chi nhánh</InputLabel>
                 <Select
                   value={filterBranch}
@@ -934,6 +949,32 @@ export const AdminCourtsPage: React.FC = () => {
                 </Select>
               </FormControl>
             </Box>
+            {/* Branch selection - only for admin */}
+            {isAdmin && (
+              <FormControl fullWidth required>
+                <InputLabel>Chi nhánh</InputLabel>
+                <Select
+                  value={formData.branchId || ''}
+                  label="Chi nhánh"
+                  onChange={(e) => setFormData({ ...formData, branchId: Number(e.target.value) })}
+                  disabled={editMode}
+                >
+                  <MenuItem value="" disabled>
+                    Chọn chi nhánh
+                  </MenuItem>
+                  {branches.map((branch) => (
+                    <MenuItem key={branch.id} value={branch.id}>
+                      {branch.branchName} - {branch.address}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {editMode && (
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                    Chi nhánh không thể thay đổi khi chỉnh sửa sân
+                  </Typography>
+                )}
+              </FormControl>
+            )}
             <Box
               sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}
             >
