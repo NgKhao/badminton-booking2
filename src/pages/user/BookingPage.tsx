@@ -224,6 +224,33 @@ export const BookingPage: React.FC = () => {
                   </Typography>
                 </div>
               </div>
+
+              {/* Branch Information */}
+              {selectedCourt.branchName && (
+                <>
+                  <Divider className="my-3" />
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <Store fontSize="small" className="text-emerald-600 mt-0.5" />
+                      <div>
+                        <Typography variant="body2" className="font-semibold text-gray-800">
+                          {selectedCourt.branchName}
+                        </Typography>
+                        {selectedCourt.branchAddress && (
+                          <Typography variant="caption" className="text-gray-600 block mt-1">
+                            {selectedCourt.branchAddress}
+                          </Typography>
+                        )}
+                        {selectedCourt.branchPhone && (
+                          <Typography variant="caption" className="text-gray-600 block mt-1">
+                            📞 {selectedCourt.branchPhone}
+                          </Typography>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
             </Paper>
           )}
 
