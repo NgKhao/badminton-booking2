@@ -30,10 +30,13 @@ import {
   Close,
   SportsTennis,
   Login,
+  LocationOn,
+  Phone,
+  Store,
 } from '@mui/icons-material';
 import type { Court } from '../../types';
 import { useAuthStore } from '../../store/authStore';
-import { useCourts } from '../../hooks/useApi';
+import { useCourts, usePublicBranches } from '../../hooks/useApi';
 import courtImage from '../../assets/court.jpg';
 
 export const CourtsPage: React.FC = () => {
@@ -44,6 +47,10 @@ export const CourtsPage: React.FC = () => {
   // React Query hook for fetching courts with pagination
   const { data, isLoading, error, refetch } = useCourts({ page: page - 1, size: pageSize });
 
+  // Fetch public branches for filtering (no auth required)
+  const { data: branchesData } = usePublicBranches();
+  const branches = useMemo(() => branchesData || [], [branchesData]);
+
   const courts = useMemo(() => data?.courts || [], [data]);
   const pagination = data?.pagination;
 
@@ -53,6 +60,7 @@ export const CourtsPage: React.FC = () => {
   const [filters, setFilters] = useState({
     courtType: '',
     priceRange: '',
+    branchId: '',
     sortBy: 'price-asc',
   });
 
@@ -74,6 +82,11 @@ export const CourtsPage: React.FC = () => {
       if (mappedType) {
         filtered = filtered.filter((court) => court.courtType === mappedType);
       }
+    }
+
+    // Filter by branch
+    if (filters.branchId) {
+      filtered = filtered.filter((court) => court.branchId?.toString() === filters.branchId);
     }
 
     // Filter by price range
@@ -216,6 +229,22 @@ export const CourtsPage: React.FC = () => {
                     </Typography>
                   </Box>
 
+                  <FormControl size="small" sx={{ minWidth: 180 }}>
+                    <InputLabel>Chi nhánh</InputLabel>
+                    <Select
+                      value={filters.branchId}
+                      label="Chi nhánh"
+                      onChange={(e) => handleFilterChange('branchId', e.target.value)}
+                    >
+                      <MenuItem value="">Tất cả chi nhánh</MenuItem>
+                      {branches.map((branch) => (
+                        <MenuItem key={branch.id} value={branch.id.toString()}>
+                          {branch.branchName}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
                   <FormControl size="small" sx={{ minWidth: 120 }}>
                     <InputLabel>Loại sân</InputLabel>
                     <Select
@@ -313,6 +342,26 @@ export const CourtsPage: React.FC = () => {
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }} noWrap>
                       {court.description}
                     </Typography>
+
+                    {/* Branch Info */}
+                    {court.branchName && (
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 0.5,
+                          mb: 1.5,
+                          p: 1,
+                          bgcolor: 'action.hover',
+                          borderRadius: 1,
+                        }}
+                      >
+                        <Store fontSize="small" color="action" />
+                        <Typography variant="body2" color="text.secondary" noWrap>
+                          {court.branchName}
+                        </Typography>
+                      </Box>
+                    )}
 
                     <Box
                       sx={{
@@ -423,6 +472,41 @@ export const CourtsPage: React.FC = () => {
                             </Typography>
                           </Box>
                         </Box>
+
+                        {/* Branch Information */}
+                        {selectedCourt.branchName && (
+                          <Box sx={{ mt: 3 }}>
+                            <Typography variant="h6" className="font-semibold mb-2">
+                              Chi nhánh
+                            </Typography>
+                            <Box className="space-y-2">
+                              <Box className="flex items-start gap-2">
+                                <Store className="text-gray-500" sx={{ mt: 0.5 }} />
+                                <Box>
+                                  <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+                                    {selectedCourt.branchName}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                              {selectedCourt.branchAddress && (
+                                <Box className="flex items-start gap-2">
+                                  <LocationOn className="text-gray-500" sx={{ mt: 0.5 }} />
+                                  <Typography variant="body2" color="text.secondary">
+                                    {selectedCourt.branchAddress}
+                                  </Typography>
+                                </Box>
+                              )}
+                              {selectedCourt.branchPhone && (
+                                <Box className="flex items-center gap-2">
+                                  <Phone className="text-gray-500" />
+                                  <Typography variant="body2" color="text.secondary">
+                                    {selectedCourt.branchPhone}
+                                  </Typography>
+                                </Box>
+                              )}
+                            </Box>
+                          </Box>
+                        )}
                       </Box>
 
                       <Box>

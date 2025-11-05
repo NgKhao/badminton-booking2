@@ -37,10 +37,18 @@ api.interceptors.response.use(
       originalRequest.url?.includes('/auth/register') ||
       originalRequest.url?.includes('/auth/logout');
 
-    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRequest) {
+    // Public API endpoints that don't require authentication
+    const isPublicRequest =
+      originalRequest.url?.includes('/courts') || originalRequest.url?.includes('/branches');
+
+    // Only handle 401 for authenticated users (those with tokens)
+    const authStore = useAuthStore.getState();
+    const hasToken = authStore.token || authStore.refreshToken;
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRequest && hasToken) {
       originalRequest._retry = true;
 
-      const refreshToken = useAuthStore.getState().refreshToken;
+      const refreshToken = authStore.refreshToken;
 
       if (refreshToken) {
         try {
@@ -56,7 +64,6 @@ api.interceptors.response.use(
             const newRefreshToken = backendData.detail.refreshToken;
 
             // Cập nhật tokens
-            const authStore = useAuthStore.getState();
             authStore.updateTokens(newAccessToken, newRefreshToken);
 
             // Retry original request với token mới
@@ -68,13 +75,12 @@ api.interceptors.response.use(
         } catch (refreshError) {
           // Refresh failed, logout user
           console.error('Token refresh failed:', refreshError);
-          const authStore = useAuthStore.getState();
           const currentUser = authStore.user;
 
           authStore.logout();
 
           // Redirect to appropriate login page
-          if (currentUser?.role === 'admin') {
+          if (currentUser?.role === 'admin' || currentUser?.role === 'staff') {
             window.location.href = '/admin/login';
           } else {
             window.location.href = '/auth';
@@ -83,13 +89,12 @@ api.interceptors.response.use(
         }
       } else {
         // No refresh token, logout user
-        const authStore = useAuthStore.getState();
         const currentUser = authStore.user;
 
         authStore.logout();
 
         // Redirect to appropriate login page
-        if (currentUser?.role === 'admin') {
+        if (currentUser?.role === 'admin' || currentUser?.role === 'staff') {
           window.location.href = '/admin/login';
         } else {
           window.location.href = '/auth';
@@ -97,7 +102,7 @@ api.interceptors.response.use(
       }
     }
 
-    // For auth requests (login/register), just return error without redirect
+    // For auth requests or public requests without token, just return error without redirect
     return Promise.reject(error);
   }
 );

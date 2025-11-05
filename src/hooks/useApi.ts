@@ -1188,8 +1188,8 @@ export interface Branch {
   branchName: string;
   address: string;
   phone: string;
-  isActive: boolean;
-  managerId: number;
+  isActive?: boolean;
+  managerId?: number;
 }
 
 export interface BranchListResponse {
@@ -1204,6 +1204,14 @@ export interface BranchListResponse {
     first: boolean;
     last: boolean;
   };
+  instance: string;
+}
+
+// Public branches API response (no pagination)
+export interface PublicBranchesResponse {
+  messenger: string;
+  status: number;
+  detail: Branch[];
   instance: string;
 }
 
@@ -1223,6 +1231,21 @@ export interface BranchManagerResponse {
   detail: BranchManager;
   instance: string;
 }
+
+/**
+ * Hook để lấy danh sách chi nhánh công khai (public) - không cần auth
+ * GET /branches
+ */
+export const usePublicBranches = (options?: UseQueryOptions<Branch[], AxiosError>) => {
+  return useQuery({
+    queryKey: ['public-branches'],
+    queryFn: async (): Promise<Branch[]> => {
+      const response: AxiosResponse<PublicBranchesResponse> = await api.get('/branches');
+      return response.data.detail;
+    },
+    ...options,
+  });
+};
 
 /**
  * Hook để lấy danh sách chi nhánh (admin only) với pagination
