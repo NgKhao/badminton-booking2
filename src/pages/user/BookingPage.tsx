@@ -5,14 +5,6 @@ import {
   Paper,
   Typography,
   Button,
-  Card,
-  CardContent,
-  CardMedia,
-  Chip,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Alert,
   Stepper,
   Step,
@@ -22,7 +14,6 @@ import {
   Container,
   Tooltip,
   CircularProgress,
-  Skeleton,
   Snackbar,
 } from '@mui/material';
 
@@ -37,6 +28,9 @@ import {
   AutoAwesome,
   TrendingUp,
   Group,
+  Store,
+  LocationOn,
+  Phone,
 } from '@mui/icons-material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -55,7 +49,7 @@ import {
 } from 'date-fns';
 import { useAuthStore } from '../../store/authStore';
 import { useCourtAvailability, useNewCreateBookingMutation } from '../../hooks/useApi';
-import type { Court, NewBookingRequest } from '../../types';
+import type { Court, NewBookingRequest, NewBookingResponse } from '../../types';
 
 const steps = ['Chọn thời gian', 'Xác nhận', 'Hoàn thành'];
 
@@ -69,6 +63,7 @@ export const BookingPage: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedStartTime, setSelectedStartTime] = useState<Date | null>(null);
   const [selectedEndTime, setSelectedEndTime] = useState<Date | null>(null);
+  const [bookingResponse, setBookingResponse] = useState<NewBookingResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -156,6 +151,7 @@ export const BookingPage: React.FC = () => {
   // API mutation hook
   const createBookingMutation = useNewCreateBookingMutation({
     onSuccess: (data) => {
+      setBookingResponse(data); // Save booking response
       setSnackbar({
         open: true,
         message: `Đặt sân thành công! Mã đặt: ${data.bookingCode}`,
@@ -450,6 +446,27 @@ export const BookingPage: React.FC = () => {
                   {format(selectedDate, 'dd/MM/yyyy - EEEE', { locale: vi })}
                 </Typography>
               </div>
+              {/* Branch Info */}
+              {selectedCourt?.branchName && (
+                <div>
+                  <Typography variant="subtitle2" className="text-gray-600 font-medium">
+                    Chi nhánh
+                  </Typography>
+                  <Typography variant="body1" className="font-semibold">
+                    {selectedCourt.branchName}
+                  </Typography>
+                  {selectedCourt.branchAddress && (
+                    <Typography variant="body2" color="text.secondary" className="mt-1">
+                      {selectedCourt.branchAddress}
+                    </Typography>
+                  )}
+                  {selectedCourt.branchPhone && (
+                    <Typography variant="body2" color="text.secondary">
+                      SĐT: {selectedCourt.branchPhone}
+                    </Typography>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="space-y-3">
@@ -534,35 +551,109 @@ export const BookingPage: React.FC = () => {
           <Divider className="mb-4" />
           <div className="text-left space-y-2">
             <div className="flex justify-between">
-              <span className="text-gray-600">Sân:</span>
-              <span className="font-semibold">{selectedCourt?.courtName}</span>
+              <span className="text-gray-600">Mã đặt sân:</span>
+              <span className="font-semibold text-emerald-600">{bookingResponse?.bookingCode}</span>
             </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Sân:</span>
+              <span className="font-semibold">
+                {bookingResponse?.court.courtName || selectedCourt?.courtName}
+              </span>
+            </div>
+            {bookingResponse?.court.branchName && (
+              <>
+                <Divider className="my-2" />
+                <div>
+                  <Typography variant="subtitle2" className="text-gray-600 font-medium mb-1">
+                    Chi nhánh
+                  </Typography>
+                  <div className="flex items-start gap-2 mb-1">
+                    <Store fontSize="small" className="text-gray-500 mt-0.5" />
+                    <Typography variant="body2" className="font-semibold">
+                      {bookingResponse.court.branchName}
+                    </Typography>
+                  </div>
+                  {bookingResponse.court.branchAddress && (
+                    <div className="flex items-start gap-2 mb-1">
+                      <LocationOn fontSize="small" className="text-gray-500 mt-0.5" />
+                      <Typography variant="body2" color="text.secondary">
+                        {bookingResponse.court.branchAddress}
+                      </Typography>
+                    </div>
+                  )}
+                  {bookingResponse.court.branchPhone && (
+                    <div className="flex items-center gap-2">
+                      <Phone fontSize="small" className="text-gray-500" />
+                      <Typography variant="body2" color="text.secondary">
+                        {bookingResponse.court.branchPhone}
+                      </Typography>
+                    </div>
+                  )}
+                </div>
+                <Divider className="my-2" />
+              </>
+            )}
             <div className="flex justify-between">
               <span className="text-gray-600">Ngày:</span>
               <span className="font-semibold">
-                {format(selectedDate, 'dd/MM/yyyy', { locale: vi })}
+                {bookingResponse?.bookingDate
+                  ? format(new Date(bookingResponse.bookingDate), 'dd/MM/yyyy', { locale: vi })
+                  : format(selectedDate, 'dd/MM/yyyy', { locale: vi })}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Giờ:</span>
               <span className="font-semibold">
-                {selectedStartTime &&
-                  selectedEndTime &&
-                  `${format(selectedStartTime, 'HH:mm')} - ${format(selectedEndTime, 'HH:mm')} (${Math.round((differenceInMinutes(selectedEndTime, selectedStartTime) / 60) * 10) / 10} giờ)`}
+                {bookingResponse
+                  ? `${bookingResponse.startTime.slice(0, 5)} - ${bookingResponse.endTime.slice(0, 5)} (${bookingResponse.duration} giờ)`
+                  : selectedStartTime &&
+                    selectedEndTime &&
+                    `${format(selectedStartTime, 'HH:mm')} - ${format(selectedEndTime, 'HH:mm')} (${Math.round((differenceInMinutes(selectedEndTime, selectedStartTime) / 60) * 10) / 10} giờ)`}
               </span>
             </div>
+            {/* <div className="flex justify-between">
+              <span className="text-gray-600">Trạng thái:</span>
+              <Chip
+                label={bookingResponse?.status === 'PENDING' ? 'Chờ xác nhận' : bookingResponse?.status}
+                size="small"
+                color="warning"
+              />
+            </div> */}
             <div className="flex justify-between">
               <span className="text-gray-600">Tổng tiền:</span>
               <span className="font-bold text-emerald-600">
-                {calculateTotalAmount().toLocaleString('vi-VN')}đ
+                {bookingResponse
+                  ? bookingResponse.totalAmount.toLocaleString('vi-VN')
+                  : calculateTotalAmount().toLocaleString('vi-VN')}
+                đ
               </span>
             </div>
+            {/* <div className="flex justify-between">
+              <span className="text-gray-600">Thanh toán:</span>
+              <Chip
+                label={
+                  bookingResponse?.paymentStatus === 'UNPAID' ? 'Chưa thanh toán' : 'Đã thanh toán'
+                }
+                size="small"
+                color={bookingResponse?.paymentStatus === 'UNPAID' ? 'error' : 'success'}
+              />
+            </div> */}
           </div>
         </Paper>
 
+        <Alert severity="success" className="mb-4 text-left">
+          <Typography variant="body2">
+            Vui lòng đến chi nhánh <strong>{bookingResponse?.court.branchName}</strong> vào đúng
+            thời gian đã đặt để thanh toán và sử dụng sân.
+          </Typography>
+        </Alert>
+
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button variant="outlined" href="/dashboard" className="border-gray-300 text-gray-700">
+          <Button variant="outlined" href="/" className="border-gray-300 text-gray-700">
             Về trang chủ
+          </Button>
+          <Button variant="contained" href="/courts" className="bg-emerald-600">
+            Đặt thêm sân
           </Button>
         </div>
       </div>

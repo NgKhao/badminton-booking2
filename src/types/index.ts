@@ -160,7 +160,7 @@ export interface NewBookingRequest {
 export interface NewBookingResponse {
   id: number;
   bookingCode: string;
-  court: Court;
+  court: Court; // Court already includes branchId, branchName, branchAddress, branchPhone
   customer: BookingCustomer;
   bookingDate: string;
   startTime: string; // Format: "HH:mm:ss"
