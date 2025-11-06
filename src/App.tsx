@@ -70,7 +70,12 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 function App() {
   // TODO: Uncomment when implementing AI Chat
   // const [isChatOpen, setIsChatOpen] = useState(false);
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, initializeAuth } = useAuthStore();
+
+  // Initialize auth on app mount
+  React.useEffect(() => {
+    initializeAuth();
+  }, [initializeAuth]);
 
   const handleOpenChat = () => {
     // TODO: Implement chat functionality

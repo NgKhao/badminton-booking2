@@ -29,10 +29,15 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = () => {
-  const { user, logout, isAuthenticated } = useAuthStore();
+  const { user, logout, isAuthenticated, initializeAuth } = useAuthStore();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Initialize auth state on mount - validate token
+  React.useEffect(() => {
+    initializeAuth();
+  }, [initializeAuth]);
 
   // React Query logout mutation
   const logoutMutation = useLogoutMutation({

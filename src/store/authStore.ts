@@ -15,11 +15,24 @@ interface AuthStore extends AuthState {
   updateUser: (user: Partial<User>) => void;
   clearTokens: () => void;
   updateTokens: (accessToken: string, refreshToken: string) => void;
+  initializeAuth: () => void;
+  isTokenValid: () => boolean;
 }
+
+// Helper function to decode JWT and check expiration
+const isTokenExpired = (token: string): boolean => {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const exp = payload.exp * 1000; // Convert to milliseconds
+    return Date.now() >= exp;
+  } catch {
+    return true;
+  }
+};
 
 export const useAuthStore = create<AuthStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       customer: null,
       isAuthenticated: false,
@@ -42,19 +55,12 @@ export const useAuthStore = create<AuthStore>()(
         if (tokens) {
           updates.token = tokens.accessToken;
           updates.refreshToken = tokens.refreshToken;
-          // Store tokens in localStorage for API calls
-          localStorage.setItem('accessToken', tokens.accessToken);
-          localStorage.setItem('refreshToken', tokens.refreshToken);
         }
 
         set(updates);
       },
 
       logout: () => {
-        // Clear local state only - API logout handled by React Query
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-
         set({
           user: null,
           customer: null,
@@ -73,15 +79,27 @@ export const useAuthStore = create<AuthStore>()(
         })),
 
       clearTokens: () => {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        set({ token: null, refreshToken: null });
+        set({ token: null, refreshToken: null, isAuthenticated: false, user: null });
       },
 
       updateTokens: (accessToken: string, refreshToken: string) => {
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
         set({ token: accessToken, refreshToken });
+      },
+
+      // Initialize auth state from persisted storage
+      initializeAuth: () => {
+        const state = get();
+        if (state.token && isTokenExpired(state.token)) {
+          // Token expired, clear auth
+          get().clearTokens();
+        }
+      },
+
+      // Check if current token is valid
+      isTokenValid: () => {
+        const token = get().token;
+        if (!token) return false;
+        return !isTokenExpired(token);
       },
     }),
     {
