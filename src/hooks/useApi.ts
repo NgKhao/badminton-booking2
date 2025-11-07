@@ -1491,3 +1491,43 @@ export const useDeleteBranchMutation = (options?: UseMutationOptions<void, Axios
     ...options,
   });
 };
+
+// ================== MAINTENANCE REPORT API HOOKS ==================
+
+// Maintenance report interfaces
+export interface MaintenanceReportRequest {
+  courtId: number;
+  description: string;
+}
+
+export interface MaintenanceReportResponse {
+  messenger: string;
+  status: number;
+  detail: string;
+  instance: string;
+}
+
+/**
+ * Hook để gửi báo cáo bảo trì sân (staff only)
+ * POST /maintenance/report
+ */
+export const useMaintenanceReportMutation = (
+  options?: UseMutationOptions<MaintenanceReportResponse, AxiosError, MaintenanceReportRequest>
+) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (
+      reportData: MaintenanceReportRequest
+    ): Promise<MaintenanceReportResponse> => {
+      const response = await api.post<MaintenanceReportResponse>('/maintenance/report', reportData);
+      return response.data;
+    },
+    onSuccess: () => {
+      // Invalidate courts list to trigger refetch
+      queryClient.invalidateQueries({ queryKey: ['admin-courts'] });
+      queryClient.invalidateQueries({ queryKey: ['courts'] });
+    },
+    ...options,
+  });
+};

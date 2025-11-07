@@ -60,6 +60,7 @@ import {
   type CreateCourtRequest,
   type UpdateCourtRequest,
   useBranches,
+  useMaintenanceReportMutation,
 } from '../../hooks/useApi';
 import { useAuthStore } from '../../store/authStore';
 
@@ -158,6 +159,26 @@ export const AdminCourtsPage: React.FC = () => {
     },
   });
 
+  const maintenanceReportMutation = useMaintenanceReportMutation({
+    onSuccess: (data) => {
+      setSnackbar({
+        open: true,
+        message: data.detail || 'Gửi báo cáo bảo trì thành công!',
+        severity: 'success',
+      });
+      setOpenMaintenanceDialog(false);
+      setMaintenanceDescription('');
+      refetch();
+    },
+    onError: (error) => {
+      setSnackbar({
+        open: true,
+        message: `Lỗi khi gửi báo cáo: ${error.message}`,
+        severity: 'error',
+      });
+    },
+  });
+
   const [filteredCourts, setFilteredCourts] = useState<Court[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -167,6 +188,8 @@ export const AdminCourtsPage: React.FC = () => {
   // Dialog states
   const [openDialog, setOpenDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [openMaintenanceDialog, setOpenMaintenanceDialog] = useState(false);
+  const [maintenanceDescription, setMaintenanceDescription] = useState('');
   const [openViewDialog, setOpenViewDialog] = useState(false);
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
   const [editMode, setEditMode] = useState(false);
@@ -394,6 +417,25 @@ export const AdminCourtsPage: React.FC = () => {
       return;
     }
 
+    // Nếu STAFF chuyển sang MAINTENANCE, yêu cầu báo cáo trước khi lưu
+    if (
+      !isAdmin &&
+      editMode &&
+      selectedCourt &&
+      formData.status === 'MAINTENANCE' &&
+      selectedCourt.status !== 'MAINTENANCE'
+    ) {
+      if (!maintenanceDescription.trim()) {
+        setSnackbar({
+          open: true,
+          message: 'Vui lòng nhập báo cáo bảo trì trước khi chuyển trạng thái',
+          severity: 'error',
+        });
+        setOpenMaintenanceDialog(true);
+        return;
+      }
+    }
+
     if (editMode && selectedCourt) {
       // Update court - branchId cannot be changed
       const courtDTO: UpdateCourtRequest = {
@@ -406,13 +448,33 @@ export const AdminCourtsPage: React.FC = () => {
         // Don't include branchId in update as it's not editable
       };
 
-      updateCourtMutation.mutate({
-        courtId: selectedCourt.id,
-        data: {
-          courtDTO,
-          imageFile: selectedFile || undefined,
+      // Nếu STAFF chuyển sang MAINTENANCE, update trước rồi gửi báo cáo sau
+      const shouldSendReport =
+        !isAdmin &&
+        formData.status === 'MAINTENANCE' &&
+        selectedCourt.status !== 'MAINTENANCE' &&
+        maintenanceDescription.trim();
+
+      updateCourtMutation.mutate(
+        {
+          courtId: selectedCourt.id,
+          data: {
+            courtDTO,
+            imageFile: selectedFile || undefined,
+          },
         },
-      });
+        {
+          onSuccess: () => {
+            // Sau khi update thành công, gửi báo cáo nếu cần
+            if (shouldSendReport) {
+              maintenanceReportMutation.mutate({
+                courtId: selectedCourt.id,
+                description: maintenanceDescription,
+              });
+            }
+          },
+        }
+      );
     } else {
       // Create new court
       const courtDTO: CreateCourtRequest = {
@@ -471,6 +533,11 @@ export const AdminCourtsPage: React.FC = () => {
       newFormData.isActive = false;
     }
 
+    // Nếu STAFF chuyển sang MAINTENANCE, yêu cầu mở dialog báo cáo
+    if (!isAdmin && newStatus === 'MAINTENANCE' && selectedCourt) {
+      setOpenMaintenanceDialog(true);
+    }
+
     setFormData(newFormData);
   };
 
@@ -488,6 +555,26 @@ export const AdminCourtsPage: React.FC = () => {
     }
 
     setFormData({ ...formData, isActive });
+  };
+
+  // Handler for maintenance report submission
+  const handleMaintenanceReport = () => {
+    if (!maintenanceDescription.trim()) {
+      setSnackbar({
+        open: true,
+        message: 'Vui lòng nhập mô tả chi tiết về sự cố bảo trì',
+        severity: 'error',
+      });
+      return;
+    }
+
+    // Close dialog and allow user to proceed with saving
+    setOpenMaintenanceDialog(false);
+    setSnackbar({
+      open: true,
+      message: 'Đã nhập báo cáo. Vui lòng nhấn "Cập nhật" để lưu thay đổi.',
+      severity: 'info',
+    });
   };
 
   // Pagination handlers
@@ -1289,6 +1376,64 @@ export const AdminCourtsPage: React.FC = () => {
             disabled={deleteCourtMutation.isPending}
           >
             {deleteCourtMutation.isPending ? 'Đang xóa...' : 'Xóa'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Maintenance Report Dialog - For STAFF */}
+      <Dialog
+        open={openMaintenanceDialog}
+        onClose={() => {
+          setOpenMaintenanceDialog(false);
+          setMaintenanceDescription('');
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Warning color="warning" />
+            <Typography variant="h6">Báo cáo bảo trì sân</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <Alert severity="warning" sx={{ mb: 3 }}>
+              Bạn đang chuyển sân <strong>{selectedCourt?.courtName}</strong> sang trạng thái bảo
+              trì. Vui lòng nhập báo cáo chi tiết về sự cố. Sau khi lưu, báo cáo sẽ được gửi lên
+              admin để xử lý.
+            </Alert>
+            <TextField
+              label="Mô tả chi tiết sự cố bảo trì"
+              placeholder="Ví dụ: Đèn sân bị cháy, cần thay bóng mới; Lưới bị rách, cần thay mới; Sàn sân bị ướt do thấm nước..."
+              value={maintenanceDescription}
+              onChange={(e) => setMaintenanceDescription(e.target.value)}
+              fullWidth
+              multiline
+              rows={4}
+              required
+              helperText="Báo cáo này sẽ được gửi cho admin sau khi cập nhật trạng thái sân"
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 3 }}>
+          <Button
+            onClick={() => {
+              setOpenMaintenanceDialog(false);
+              setMaintenanceDescription('');
+            }}
+            startIcon={<Cancel />}
+          >
+            Hủy
+          </Button>
+          <Button
+            variant="contained"
+            color="warning"
+            onClick={handleMaintenanceReport}
+            startIcon={<Warning />}
+            disabled={!maintenanceDescription.trim()}
+          >
+            Xác nhận
           </Button>
         </DialogActions>
       </Dialog>
