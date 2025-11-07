@@ -209,3 +209,19 @@ export interface DashboardRangeParams {
   endDate: string; // Format: "YYYY-MM-DD"
   branchId?: number; // Optional - only for ADMIN role
 }
+
+// Maintenance Report types
+export interface MaintenanceReport {
+  id: number;
+  courtName: string;
+  reporterName: string;
+  branchName: string;
+  description: string;
+}
+
+export interface MaintenanceReportsResponse {
+  messenger: string;
+  status: number;
+  detail: MaintenanceReport[];
+  instance: string;
+}

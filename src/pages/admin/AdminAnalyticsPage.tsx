@@ -10,6 +10,15 @@ import {
   MenuItem,
   Button,
   useTheme,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Chip,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import { AttachMoney, EventNote, SportsTennis, Refresh, PeopleAlt } from '@mui/icons-material';
 import {
@@ -26,7 +35,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { vi } from 'date-fns/locale';
-import { useDashboardRange, useBranches } from '../../hooks/useApi';
+import { useDashboardRange, useBranches, useMaintenanceReports } from '../../hooks/useApi';
 import { useAuthStore } from '../../store/authStore';
 
 // Types
@@ -76,6 +85,14 @@ export const AdminAnalyticsPage: React.FC = () => {
 
   // Fetch dashboard data
   const { data: dashboardData, isLoading, error, refetch } = useDashboardRange(apiParams);
+
+  // Fetch maintenance reports (only for admin)
+  const {
+    data: maintenanceReports,
+    isLoading: reportsLoading,
+    error: reportsError,
+    refetch: refetchReports,
+  } = useMaintenanceReports({ enabled: isAdmin });
 
   // Transform chart data
   const revenueData = useMemo(() => {
@@ -307,6 +324,112 @@ export const AdminAnalyticsPage: React.FC = () => {
           </Box>
         </Card>
       </Box>
+
+      {/* Maintenance Reports Section - Only for ADMIN */}
+      {isAdmin && (
+        <Box sx={{ mb: 4 }}>
+          <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
+            <Box
+              sx={{
+                p: 3,
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                  Báo cáo bảo trì sân
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Danh sách báo cáo sự cố từ nhân viên các chi nhánh
+                </Typography>
+              </Box>
+              <Button
+                variant="outlined"
+                startIcon={<Refresh />}
+                onClick={() => refetchReports()}
+                disabled={reportsLoading}
+                size="small"
+              >
+                Làm mới
+              </Button>
+            </Box>
+
+            <Box sx={{ p: 3 }}>
+              {reportsError ? (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  Lỗi khi tải danh sách báo cáo bảo trì
+                </Alert>
+              ) : reportsLoading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                  <CircularProgress />
+                </Box>
+              ) : !maintenanceReports || maintenanceReports.length === 0 ? (
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <Typography color="text.secondary">Không có báo cáo bảo trì nào</Typography>
+                </Box>
+              ) : (
+                <TableContainer>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ fontWeight: 'bold' }}>ID</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold' }}>Tên sân</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold' }}>Chi nhánh</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold' }}>Người báo cáo</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold' }}>Mô tả sự cố</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {maintenanceReports.map((report) => (
+                        <TableRow key={report.id} hover>
+                          <TableCell>
+                            <Chip label={`#${report.id}`} size="small" color="primary" />
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                              {report.courtName}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" color="text.secondary">
+                              {report.branchName}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={report.reporterName}
+                              size="small"
+                              color="warning"
+                              variant="outlined"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                maxWidth: 400,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {report.description}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </Box>
+          </Card>
+        </Box>
+      )}
     </Box>
   );
 };

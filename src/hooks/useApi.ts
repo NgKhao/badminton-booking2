@@ -22,6 +22,8 @@ import type {
   DashboardDailyParams,
   DashboardMonthlyParams,
   DashboardRangeParams,
+  MaintenanceReport,
+  MaintenanceReportsResponse,
 } from '../types';
 
 // ================== AUTH API HOOKS ==================
@@ -1553,7 +1555,28 @@ export const useMaintenanceReportMutation = (
       // Invalidate courts list to trigger refetch
       queryClient.invalidateQueries({ queryKey: ['admin-courts'] });
       queryClient.invalidateQueries({ queryKey: ['courts'] });
+      // Invalidate maintenance reports to trigger refetch
+      queryClient.invalidateQueries({ queryKey: ['maintenance-reports'] });
     },
+    ...options,
+  });
+};
+
+/**
+ * Hook để lấy danh sách báo cáo bảo trì (admin only)
+ * GET /maintenance/report
+ */
+export const useMaintenanceReports = (
+  options?: Omit<UseQueryOptions<MaintenanceReport[], AxiosError>, 'queryKey' | 'queryFn'>
+) => {
+  return useQuery({
+    queryKey: ['maintenance-reports'],
+    queryFn: async (): Promise<MaintenanceReport[]> => {
+      const response: AxiosResponse<MaintenanceReportsResponse> =
+        await api.get('/maintenance/report');
+      return response.data.detail;
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
     ...options,
   });
 };
