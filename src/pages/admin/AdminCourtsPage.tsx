@@ -405,6 +405,7 @@ export const AdminCourtsPage: React.FC = () => {
         hourlyRate: formData.hourlyRate,
         description: formData.description,
         isActive: formData.isActive,
+        status: formData.status, // Add status field
         // Don't include branchId in update as it's not editable
       };
 
