@@ -1252,7 +1252,10 @@ export const usePublicBranches = (options?: UseQueryOptions<Branch[], AxiosError
  */
 export const useBranches = (
   params?: PaginationParams,
-  options?: UseQueryOptions<{ branches: Branch[]; pagination: PaginationInfo }, AxiosError>
+  options?: Omit<
+    UseQueryOptions<{ branches: Branch[]; pagination: PaginationInfo }, AxiosError>,
+    'queryKey' | 'queryFn'
+  >
 ) => {
   return useQuery({
     queryKey: ['branches', params],

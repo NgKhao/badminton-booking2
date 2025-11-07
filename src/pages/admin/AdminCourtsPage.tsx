@@ -83,11 +83,8 @@ export const AdminCourtsPage: React.FC = () => {
   const [pageSize, setPageSize] = useState(5);
 
   // Fetch branches for admin filter (only for admin users)
-  const { data: branchesData } = useBranches({ page: 0, size: 100 });
-  const branches = React.useMemo(
-    () => (isAdmin ? branchesData?.branches || [] : []),
-    [isAdmin, branchesData?.branches]
-  );
+  const { data: branchesData } = useBranches({ page: 0, size: 100 }, { enabled: isAdmin });
+  const branches = React.useMemo(() => branchesData?.branches || [], [branchesData?.branches]);
 
   // React Query hook for fetching admin courts
   const {
