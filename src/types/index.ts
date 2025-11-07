@@ -203,3 +203,9 @@ export interface DashboardMonthlyParams {
   month: number; // 1-12
   year: number; // YYYY
 }
+
+export interface DashboardRangeParams {
+  startDate: string; // Format: "YYYY-MM-DD"
+  endDate: string; // Format: "YYYY-MM-DD"
+  branchId?: number; // Optional - only for ADMIN role
+}

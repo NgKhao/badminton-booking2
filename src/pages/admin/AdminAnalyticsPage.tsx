@@ -21,8 +21,13 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { format } from 'date-fns';
-import { useDashboardDaily, useDashboardMonthly } from '../../hooks/useApi';
+import { format, subDays } from 'date-fns';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { vi } from 'date-fns/locale';
+import { useDashboardRange, useBranches } from '../../hooks/useApi';
+import { useAuthStore } from '../../store/authStore';
 
 // Types
 interface RevenueData {
@@ -40,40 +45,37 @@ const transformChartData = (revenueChart: Record<string, number>): RevenueData[]
 
 export const AdminAnalyticsPage: React.FC = () => {
   const theme = useTheme();
-  const [timeRange, setTimeRange] = useState<'today' | 'thisMonth'>('thisMonth');
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === 'admin';
 
-  // Prepare API params based on time range
+  // State for date range
+  const [startDate, setStartDate] = useState<Date | null>(subDays(new Date(), 7)); // Last 7 days
+  const [endDate, setEndDate] = useState<Date | null>(new Date());
+  const [selectedBranchId, setSelectedBranchId] = useState<number | undefined>(undefined);
+
+  // Fetch branches for admin filter (only for admin users)
+  const { data: branchesData } = useBranches({ page: 0, size: 100 }, { enabled: isAdmin });
+  const branches = React.useMemo(() => branchesData?.branches || [], [branchesData?.branches]);
+
+  // Prepare API params
   const apiParams = useMemo(() => {
-    const today = new Date();
-    if (timeRange === 'today') {
+    if (!startDate || !endDate) {
       return {
-        type: 'daily' as const,
-        params: { date: format(today, 'yyyy-MM-dd') },
-      };
-    } else {
-      return {
-        type: 'monthly' as const,
-        params: { month: today.getMonth() + 1, year: today.getFullYear() },
+        startDate: '',
+        endDate: '',
+        branchId: undefined,
       };
     }
-  }, [timeRange]);
 
-  // Fetch dashboard data - always call both hooks to avoid conditional hooks
-  const dailyQuery = useDashboardDaily(
-    apiParams.type === 'daily' ? apiParams.params : { date: '' }
-  );
+    return {
+      startDate: format(startDate, 'yyyy-MM-dd'),
+      endDate: format(endDate, 'yyyy-MM-dd'),
+      branchId: isAdmin ? selectedBranchId : undefined,
+    };
+  }, [startDate, endDate, selectedBranchId, isAdmin]);
 
-  const monthlyQuery = useDashboardMonthly(
-    apiParams.type === 'monthly' ? apiParams.params : { month: 0, year: 0 }
-  );
-
-  // Use data from the appropriate query
-  const {
-    data: dashboardData,
-    isLoading,
-    error,
-    refetch,
-  } = apiParams.type === 'daily' ? dailyQuery : monthlyQuery;
+  // Fetch dashboard data
+  const { data: dashboardData, isLoading, error, refetch } = useDashboardRange(apiParams);
 
   // Transform chart data
   const revenueData = useMemo(() => {
@@ -103,30 +105,69 @@ export const AdminAnalyticsPage: React.FC = () => {
       {/* Controls */}
       <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', mb: 3 }}>
         <Box sx={{ p: 3 }}>
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-            <FormControl size="small" sx={{ minWidth: 150 }}>
-              <InputLabel>Khoảng thời gian</InputLabel>
-              <Select
-                value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value as 'today' | 'thisMonth')}
-                label="Khoảng thời gian"
-              >
-                <MenuItem value="today">Hôm nay</MenuItem>
-                <MenuItem value="thisMonth">Tháng này</MenuItem>
-              </Select>
-            </FormControl>
+          <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={vi}>
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+              <DatePicker
+                label="Từ ngày"
+                value={startDate}
+                onChange={(newValue) => setStartDate(newValue)}
+                format="dd/MM/yyyy"
+                slotProps={{
+                  textField: {
+                    size: 'small',
+                    sx: { minWidth: 150 },
+                  },
+                }}
+              />
 
-            <Button
-              variant="outlined"
-              startIcon={<Refresh />}
-              onClick={() => {
-                refetch();
-              }}
-              disabled={isLoading}
-            >
-              Làm mới
-            </Button>
-          </Box>
+              <DatePicker
+                label="Đến ngày"
+                value={endDate}
+                onChange={(newValue) => setEndDate(newValue)}
+                format="dd/MM/yyyy"
+                minDate={startDate || undefined}
+                slotProps={{
+                  textField: {
+                    size: 'small',
+                    sx: { minWidth: 150 },
+                  },
+                }}
+              />
+
+              {isAdmin && branches.length > 0 && (
+                <FormControl size="small" sx={{ minWidth: 200 }}>
+                  <InputLabel>Chi nhánh</InputLabel>
+                  <Select
+                    value={selectedBranchId || 'all'}
+                    label="Chi nhánh"
+                    onChange={(e) =>
+                      setSelectedBranchId(
+                        e.target.value === 'all' ? undefined : Number(e.target.value)
+                      )
+                    }
+                  >
+                    <MenuItem value="all">Tất cả chi nhánh</MenuItem>
+                    {branches.map((branch) => (
+                      <MenuItem key={branch.id} value={branch.id}>
+                        {branch.branchName}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
+
+              <Button
+                variant="outlined"
+                startIcon={<Refresh />}
+                onClick={() => {
+                  refetch();
+                }}
+                disabled={isLoading}
+              >
+                Làm mới
+              </Button>
+            </Box>
+          </LocalizationProvider>
         </Box>
       </Card>
 
@@ -230,9 +271,29 @@ export const AdminAnalyticsPage: React.FC = () => {
               <ResponsiveContainer width="100%" height={300}>
                 <AreaChart data={revenueData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
+                  <XAxis
+                    dataKey="date"
+                    tickFormatter={(value) => {
+                      try {
+                        const date = new Date(value);
+                        return format(date, 'dd/MM');
+                      } catch {
+                        return value;
+                      }
+                    }}
+                  />
                   <YAxis />
-                  <Tooltip formatter={(value: number) => [formatCurrency(value), 'Doanh thu']} />
+                  <Tooltip
+                    formatter={(value: number) => [formatCurrency(value), 'Doanh thu']}
+                    labelFormatter={(label) => {
+                      try {
+                        const date = new Date(label);
+                        return format(date, 'dd/MM/yyyy');
+                      } catch {
+                        return label;
+                      }
+                    }}
+                  />
                   <Area
                     type="monotone"
                     dataKey="revenue"

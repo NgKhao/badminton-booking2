@@ -21,6 +21,7 @@ import type {
   DashboardData,
   DashboardDailyParams,
   DashboardMonthlyParams,
+  DashboardRangeParams,
 } from '../types';
 
 // ================== AUTH API HOOKS ==================
@@ -1177,6 +1178,31 @@ export const useDashboardMonthly = (
     },
     enabled: !!(params.month && params.year),
     staleTime: 1000 * 60 * 10, // 10 minutes
+    ...options,
+  });
+};
+
+/**
+ * Hook để lấy dashboard data theo khoảng thời gian (date range)
+ */
+export const useDashboardRange = (
+  params: DashboardRangeParams,
+  options?: UseQueryOptions<DashboardData, AxiosError>
+) => {
+  return useQuery({
+    queryKey: ['dashboard', 'range', params.startDate, params.endDate, params.branchId],
+    queryFn: async (): Promise<DashboardData> => {
+      const response: AxiosResponse<DashboardData> = await api.get('/dashboard/range', {
+        params: {
+          startDate: params.startDate,
+          endDate: params.endDate,
+          ...(params.branchId && { branchId: params.branchId }),
+        },
+      });
+      return response.data;
+    },
+    enabled: !!(params.startDate && params.endDate),
+    staleTime: 1000 * 60 * 5, // 5 minutes
     ...options,
   });
 };
