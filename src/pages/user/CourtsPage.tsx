@@ -34,9 +34,14 @@ import {
   Phone,
   Store,
 } from '@mui/icons-material';
+import { DatePicker, TimePicker } from '@mui/x-date-pickers';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { vi } from 'date-fns/locale';
+import { format } from 'date-fns';
 import type { Court } from '../../types';
 import { useAuthStore } from '../../store/authStore';
-import { useCourts, usePublicBranches } from '../../hooks/useApi';
+import { useCourts, usePublicBranches, useFreeCourts } from '../../hooks/useApi';
 import courtImage from '../../assets/court.jpg';
 
 export const CourtsPage: React.FC = () => {
@@ -44,15 +49,56 @@ export const CourtsPage: React.FC = () => {
   const [page, setPage] = useState(1); // Material-UI Pagination uses 1-based indexing
   const [pageSize] = useState(6);
 
-  // React Query hook for fetching courts with pagination
-  const { data, isLoading, error, refetch } = useCourts({ page: page - 1, size: pageSize });
+  // Time filter state
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedStartTime, setSelectedStartTime] = useState<Date | null>(null);
+  const [selectedEndTime, setSelectedEndTime] = useState<Date | null>(null);
+  const [useTimeFilter, setUseTimeFilter] = useState(false);
+
+  // Format time filter params
+  const timeFilterParams = useMemo(() => {
+    if (!selectedDate || !selectedStartTime || !selectedEndTime) return null;
+    return {
+      date: format(selectedDate, 'yyyy-MM-dd'),
+      start: format(selectedStartTime, 'HH:mm'),
+      end: format(selectedEndTime, 'HH:mm'),
+    };
+  }, [selectedDate, selectedStartTime, selectedEndTime]);
+
+  // React Query hooks - conditional based on time filter
+  const {
+    data: regularData,
+    isLoading: regularLoading,
+    error: regularError,
+    refetch: regularRefetch,
+  } = useCourts({ page: page - 1, size: pageSize }, { enabled: !useTimeFilter });
+
+  const {
+    data: freeCourtsList,
+    isLoading: freeLoading,
+    error: freeError,
+    refetch: freeRefetch,
+  } = useFreeCourts(timeFilterParams!, { enabled: useTimeFilter && !!timeFilterParams });
+
+  // Determine which data to use
+  const isLoading = useTimeFilter ? freeLoading : regularLoading;
+  const error = useTimeFilter ? freeError : regularError;
+  const refetch = useTimeFilter ? freeRefetch : regularRefetch;
+
+  // Get courts and pagination
+  const courts = useMemo(() => {
+    if (useTimeFilter) {
+      // Reverse order for time filter results
+      return [...(freeCourtsList || [])].reverse();
+    }
+    return regularData?.courts || [];
+  }, [useTimeFilter, freeCourtsList, regularData]);
+
+  const pagination = regularData?.pagination; // Pagination only for regular view
 
   // Fetch public branches for filtering (no auth required)
   const { data: branchesData } = usePublicBranches();
   const branches = useMemo(() => branchesData || [], [branchesData]);
-
-  const courts = useMemo(() => data?.courts || [], [data]);
-  const pagination = data?.pagination;
 
   const [filteredCourts, setFilteredCourts] = useState<Court[]>([]);
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
@@ -61,11 +107,27 @@ export const CourtsPage: React.FC = () => {
     courtType: '',
     priceRange: '',
     branchId: '',
-    sortBy: 'price-asc',
   });
 
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
+
+  // Apply time filter
+  const handleApplyTimeFilter = () => {
+    if (selectedDate && selectedStartTime && selectedEndTime) {
+      setUseTimeFilter(true);
+      setPage(1); // Reset to first page
+    }
+  };
+
+  // Clear time filter
+  const handleClearTimeFilter = () => {
+    setUseTimeFilter(false);
+    setSelectedDate(null);
+    setSelectedStartTime(null);
+    setSelectedEndTime(null);
+    setPage(1); // Reset to first page
+  };
 
   // Filter functions
   const applyFilters = useCallback(() => {
@@ -95,21 +157,7 @@ export const CourtsPage: React.FC = () => {
       filtered = filtered.filter((court) => court.hourlyRate >= min && court.hourlyRate <= max);
     }
 
-    // Sort
-    switch (filters.sortBy) {
-      case 'price-asc':
-        filtered.sort((a, b) => a.hourlyRate - b.hourlyRate);
-        break;
-      case 'price-desc':
-        filtered.sort((a, b) => b.hourlyRate - a.hourlyRate);
-        break;
-      case 'name':
-        filtered.sort((a, b) => a.courtName.localeCompare(b.courtName));
-        break;
-      default:
-        break;
-    }
-
+    // No sorting - display in original API order
     setFilteredCourts(filtered);
   }, [courts, filters]);
 
@@ -175,8 +223,24 @@ export const CourtsPage: React.FC = () => {
     }
 
     if (selectedCourt) {
-      // Navigate to booking page with selected court
-      navigate('/booking', { state: { selectedCourt } });
+      // Navigate to booking page with selected court and optional time params
+      const navigationState: {
+        selectedCourt: Court;
+        selectedDate?: Date;
+        selectedStartTime?: Date;
+        selectedEndTime?: Date;
+      } = {
+        selectedCourt,
+      };
+
+      // If time filter is active, pass the time parameters
+      if (useTimeFilter && selectedDate && selectedStartTime && selectedEndTime) {
+        navigationState.selectedDate = selectedDate;
+        navigationState.selectedStartTime = selectedStartTime;
+        navigationState.selectedEndTime = selectedEndTime;
+      }
+
+      navigate('/booking', { state: navigationState });
       setSelectedCourt(null);
     }
   };
@@ -219,72 +283,178 @@ export const CourtsPage: React.FC = () => {
             </Box>
 
             {/* Filters */}
-            <Card sx={{ mb: 4 }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <FilterList color="action" />
-                    <Typography variant="h6" sx={{ fontWeight: 'semibold' }}>
-                      Bộ lọc
+            <Card sx={{ mb: 4, boxShadow: 3 }}>
+              <CardContent sx={{ p: 3 }}>
+                {/* Basic Filters Section */}
+                <Box sx={{ mb: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                    <FilterList color="primary" />
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                      Bộ lọc cơ bản
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: {
+                        xs: '1fr',
+                        sm: 'repeat(2, 1fr)',
+                        md: 'repeat(3, 1fr)',
+                      },
+                      gap: 2,
+                    }}
+                  >
+                    <FormControl size="small" fullWidth>
+                      <InputLabel>Chi nhánh</InputLabel>
+                      <Select
+                        value={filters.branchId}
+                        label="Chi nhánh"
+                        onChange={(e) => handleFilterChange('branchId', e.target.value)}
+                        disabled={useTimeFilter}
+                      >
+                        <MenuItem value="">Tất cả chi nhánh</MenuItem>
+                        {branches.map((branch) => (
+                          <MenuItem key={branch.id} value={branch.id.toString()}>
+                            {branch.branchName}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+
+                    <FormControl size="small" fullWidth>
+                      <InputLabel>Loại sân</InputLabel>
+                      <Select
+                        value={filters.courtType}
+                        label="Loại sân"
+                        onChange={(e) => handleFilterChange('courtType', e.target.value)}
+                        disabled={useTimeFilter}
+                      >
+                        <MenuItem value="">Tất cả</MenuItem>
+                        <MenuItem value="Trong nhà">Trong nhà</MenuItem>
+                        <MenuItem value="Ngoài trời">Ngoài trời</MenuItem>
+                      </Select>
+                    </FormControl>
+
+                    <FormControl size="small" fullWidth>
+                      <InputLabel>Khoảng giá</InputLabel>
+                      <Select
+                        value={filters.priceRange}
+                        label="Khoảng giá"
+                        onChange={(e) => handleFilterChange('priceRange', e.target.value)}
+                        disabled={useTimeFilter}
+                      >
+                        <MenuItem value="">Tất cả</MenuItem>
+                        <MenuItem value="0-100000">Dưới 100k</MenuItem>
+                        <MenuItem value="100000-150000">100k - 150k</MenuItem>
+                        <MenuItem value="150000-200000">150k - 200k</MenuItem>
+                        <MenuItem value="200000-999999">Trên 200k</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Box>
+                </Box>
+
+                {/* Divider */}
+                <Box sx={{ borderTop: 1, borderColor: 'divider', my: 3 }} />
+
+                {/* Time Filter Section */}
+                <Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                    <Schedule color="primary" />
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                      Lọc theo thời gian
                     </Typography>
                   </Box>
 
-                  <FormControl size="small" sx={{ minWidth: 180 }}>
-                    <InputLabel>Chi nhánh</InputLabel>
-                    <Select
-                      value={filters.branchId}
-                      label="Chi nhánh"
-                      onChange={(e) => handleFilterChange('branchId', e.target.value)}
+                  <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={vi}>
+                    <Box
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: {
+                          xs: '1fr',
+                          sm: 'repeat(2, 1fr)',
+                          md: 'repeat(4, 1fr)',
+                        },
+                        gap: 2,
+                        mb: 2,
+                      }}
                     >
-                      <MenuItem value="">Tất cả chi nhánh</MenuItem>
-                      {branches.map((branch) => (
-                        <MenuItem key={branch.id} value={branch.id.toString()}>
-                          {branch.branchName}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                      <DatePicker
+                        label="Chọn ngày"
+                        value={selectedDate}
+                        onChange={(newValue) => setSelectedDate(newValue)}
+                        disablePast
+                        minDate={new Date()}
+                        slotProps={{
+                          textField: {
+                            size: 'small',
+                            fullWidth: true,
+                          },
+                        }}
+                      />
 
-                  <FormControl size="small" sx={{ minWidth: 120 }}>
-                    <InputLabel>Loại sân</InputLabel>
-                    <Select
-                      value={filters.courtType}
-                      label="Loại sân"
-                      onChange={(e) => handleFilterChange('courtType', e.target.value)}
-                    >
-                      <MenuItem value="">Tất cả</MenuItem>
-                      <MenuItem value="Trong nhà">Trong nhà</MenuItem>
-                      <MenuItem value="Ngoài trời">Ngoài trời</MenuItem>
-                    </Select>
-                  </FormControl>
+                      <TimePicker
+                        label="Giờ bắt đầu"
+                        value={selectedStartTime}
+                        onChange={(newValue) => setSelectedStartTime(newValue)}
+                        ampm={false}
+                        minTime={new Date(2000, 0, 1, 6, 0)}
+                        maxTime={new Date(2000, 0, 1, 22, 0)}
+                        minutesStep={30}
+                        slotProps={{
+                          textField: {
+                            size: 'small',
+                            fullWidth: true,
+                          },
+                        }}
+                      />
 
-                  <FormControl size="small" sx={{ minWidth: 150 }}>
-                    <InputLabel>Giá (VNĐ/giờ)</InputLabel>
-                    <Select
-                      value={filters.priceRange}
-                      label="Giá (VNĐ/giờ)"
-                      onChange={(e) => handleFilterChange('priceRange', e.target.value)}
-                    >
-                      <MenuItem value="">Tất cả</MenuItem>
-                      <MenuItem value="0-100000">Dưới 100k</MenuItem>
-                      <MenuItem value="100000-150000">100k - 150k</MenuItem>
-                      <MenuItem value="150000-200000">150k - 200k</MenuItem>
-                      <MenuItem value="200000-999999">Trên 200k</MenuItem>
-                    </Select>
-                  </FormControl>
+                      <TimePicker
+                        label="Giờ kết thúc"
+                        value={selectedEndTime}
+                        onChange={(newValue) => setSelectedEndTime(newValue)}
+                        ampm={false}
+                        minTime={new Date(2000, 0, 1, 6, 0)}
+                        maxTime={new Date(2000, 0, 1, 22, 0)}
+                        minutesStep={30}
+                        slotProps={{
+                          textField: {
+                            size: 'small',
+                            fullWidth: true,
+                          },
+                        }}
+                      />
 
-                  <FormControl size="small" sx={{ minWidth: 120 }}>
-                    <InputLabel>Sắp xếp</InputLabel>
-                    <Select
-                      value={filters.sortBy}
-                      label="Sắp xếp"
-                      onChange={(e) => handleFilterChange('sortBy', e.target.value)}
-                    >
-                      <MenuItem value="price-asc">Giá tăng dần</MenuItem>
-                      <MenuItem value="price-desc">Giá giảm dần</MenuItem>
-                      <MenuItem value="name">Tên A-Z</MenuItem>
-                    </Select>
-                  </FormControl>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Button
+                          fullWidth
+                          variant="contained"
+                          onClick={handleApplyTimeFilter}
+                          disabled={!selectedDate || !selectedStartTime || !selectedEndTime}
+                          sx={{ height: '40px' }}
+                        >
+                          Áp dụng
+                        </Button>
+                        {useTimeFilter && (
+                          <Button
+                            variant="outlined"
+                            onClick={handleClearTimeFilter}
+                            sx={{ minWidth: '40px', height: '40px', px: 1 }}
+                          >
+                            <Close />
+                          </Button>
+                        )}
+                      </Box>
+                    </Box>
+                  </LocalizationProvider>
+
+                  {useTimeFilter && (
+                    <Alert severity="success" icon={<Schedule />} sx={{ mt: 1 }}>
+                      Hiển thị sân trống từ{' '}
+                      <strong>{selectedStartTime && format(selectedStartTime, 'HH:mm')}</strong> đến{' '}
+                      <strong>{selectedEndTime && format(selectedEndTime, 'HH:mm')}</strong> vào{' '}
+                      <strong>{selectedDate && format(selectedDate, 'dd/MM/yyyy')}</strong>
+                    </Alert>
+                  )}
                 </Box>
               </CardContent>
             </Card>

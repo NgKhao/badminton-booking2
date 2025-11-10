@@ -55,14 +55,28 @@ const steps = ['Chọn thời gian', 'Xác nhận', 'Hoàn thành'];
 
 export const BookingPage: React.FC = () => {
   const location = useLocation();
-  const { selectedCourt: initialSelectedCourt } =
-    (location.state as { selectedCourt?: Court }) || {};
+  const {
+    selectedCourt: initialSelectedCourt,
+    selectedDate: preSelectedDate,
+    selectedStartTime: preSelectedStartTime,
+    selectedEndTime: preSelectedEndTime,
+  } = (location.state as {
+    selectedCourt?: Court;
+    selectedDate?: Date;
+    selectedStartTime?: Date;
+    selectedEndTime?: Date;
+  }) || {};
 
-  const [activeStep, setActiveStep] = useState(0);
+  // Check if time is pre-selected from CourtsPage
+  const hasPreSelectedTime = !!(preSelectedDate && preSelectedStartTime && preSelectedEndTime);
+
+  const [activeStep, setActiveStep] = useState(hasPreSelectedTime ? 1 : 0); // Skip to step 1 if time is pre-selected
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(initialSelectedCourt || null);
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [selectedStartTime, setSelectedStartTime] = useState<Date | null>(null);
-  const [selectedEndTime, setSelectedEndTime] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date>(preSelectedDate || new Date());
+  const [selectedStartTime, setSelectedStartTime] = useState<Date | null>(
+    preSelectedStartTime || null
+  );
+  const [selectedEndTime, setSelectedEndTime] = useState<Date | null>(preSelectedEndTime || null);
   const [bookingResponse, setBookingResponse] = useState<NewBookingResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState<{

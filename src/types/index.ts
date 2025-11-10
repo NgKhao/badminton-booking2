@@ -225,3 +225,17 @@ export interface MaintenanceReportsResponse {
   detail: MaintenanceReport[];
   instance: string;
 }
+
+// Free Courts API types
+export interface FreeCourtParams {
+  start: string; // Format: "HH:mm"
+  end: string; // Format: "HH:mm"
+  date: string; // Format: "YYYY-MM-DD"
+}
+
+export interface FreeCourtsResponse {
+  messenger: string;
+  status: number;
+  detail: Court[];
+  instance: string;
+}

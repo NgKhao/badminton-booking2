@@ -24,6 +24,8 @@ import type {
   DashboardRangeParams,
   MaintenanceReport,
   MaintenanceReportsResponse,
+  FreeCourtParams,
+  FreeCourtsResponse,
 } from '../types';
 
 // ================== AUTH API HOOKS ==================
@@ -332,7 +334,10 @@ export interface CourtDetailResponse {
  */
 export const useCourts = (
   params?: PaginationParams,
-  options?: UseQueryOptions<{ courts: Court[]; pagination: PaginationInfo }, AxiosError>
+  options?: Omit<
+    UseQueryOptions<{ courts: Court[]; pagination: PaginationInfo }, AxiosError>,
+    'queryKey' | 'queryFn'
+  >
 ) => {
   return useQuery({
     queryKey: ['courts', params],
@@ -366,7 +371,10 @@ export const useCourts = (
  */
 export const useAdminCourts = (
   params?: PaginationParams,
-  options?: UseQueryOptions<{ courts: Court[]; pagination: PaginationInfo }, AxiosError>
+  options?: Omit<
+    UseQueryOptions<{ courts: Court[]; pagination: PaginationInfo }, AxiosError>,
+    'queryKey' | 'queryFn'
+  >
 ) => {
   return useQuery({
     queryKey: ['admin-courts', params],
@@ -389,6 +397,31 @@ export const useAdminCourts = (
           last: response.data.detail.last,
         },
       };
+    },
+    ...options,
+  });
+};
+
+/**
+ * Hook để lấy danh sách sân trống trong khoảng thời gian cụ thể
+ */
+export const useFreeCourts = (
+  params: FreeCourtParams,
+  options?: Omit<UseQueryOptions<Court[], AxiosError>, 'queryKey' | 'queryFn'>
+) => {
+  return useQuery({
+    queryKey: ['free-courts', params],
+    queryFn: async (): Promise<Court[]> => {
+      const queryParams = new URLSearchParams();
+      queryParams.append('start', params.start);
+      queryParams.append('end', params.end);
+      queryParams.append('date', params.date);
+
+      const response: AxiosResponse<FreeCourtsResponse> = await api.get(
+        `/courts/free?${queryParams.toString()}`
+      );
+
+      return response.data.detail;
     },
     ...options,
   });

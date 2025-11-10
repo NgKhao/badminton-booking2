@@ -231,7 +231,7 @@ export const HomePage = () => {
                   Đặt Sân Ngay
                 </Button>
 
-                <Button
+                {/* <Button
                   variant="outlined"
                   size="large"
                   component={Link}
@@ -249,7 +249,7 @@ export const HomePage = () => {
                   }}
                 >
                   Xem Tất Cả Sân
-                </Button>
+                </Button> */}
               </Box>
 
               {/* Stats */}
